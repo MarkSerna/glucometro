@@ -455,6 +455,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Cargar rangos objetivo guardados
     loadTargetRanges();
     
+    // Configurar estado inicial de notificaciones
+    updateNotificationStatus();
+    
+    // Auto-iniciar notificaciones si ya están habilitadas
+    if (localStorage.getItem('notificationsEnabled') === 'true') {
+        notificationScheduler.notificationsEnabled = true;
+        notificationScheduler.start();
+        updateNotificationStatus();
+    }
+    
     // Delegación de eventos para botones de eliminar del historial
     if (historyListContainer) {
         historyListContainer.addEventListener('click', function(e) {
@@ -1026,3 +1036,191 @@ function clearHistory() {
 
 // Hacer la función deleteHistoryRecord accesible globalmente
 window.deleteHistoryRecord = deleteHistoryRecord;
+
+// Sistema de notificaciones programadas
+class NotificationScheduler {
+    constructor() {
+        this.scheduledTimes = [
+            { time: '07:30', message: '🌅 ¡Hora de medir tu glucosa antes del desayuno!' },
+            { time: '09:00', message: '🍳 ¿Ya mediste tu glucosa después del desayuno?' },
+            { time: '12:30', message: '☀️ ¡Hora de medir tu glucosa antes del almuerzo!' },
+            { time: '14:00', message: '🍽️ ¿Ya mediste tu glucosa después del almuerzo?' },
+            { time: '18:30', message: '🌙 ¡Hora de medir tu glucosa antes de la cena!' },
+            { time: '20:00', message: '🍽️ ¿Ya mediste tu glucosa después de la cena?' }
+        ];
+        this.notificationsEnabled = false;
+        this.checkInterval = null;
+        this.lastNotificationDate = {};
+    }
+
+    async requestPermission() {
+        if ('Notification' in window) {
+            const permission = await Notification.requestPermission();
+            this.notificationsEnabled = permission === 'granted';
+            return this.notificationsEnabled;
+        }
+        return false;
+    }
+
+    showNotification(title, message) {
+        if (this.notificationsEnabled && 'Notification' in window) {
+            new Notification(title, {
+                body: message,
+                icon: '🩺',
+                badge: '🩺',
+                tag: 'glucose-reminder',
+                requireInteraction: true
+            });
+        }
+        
+        // También mostrar alerta en la aplicación
+        this.showInAppAlert(message);
+    }
+
+    showInAppAlert(message) {
+        // Crear una alerta visual en la aplicación
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'fixed top-4 right-4 bg-blue-500 text-white p-4 rounded-lg shadow-lg z-50 max-w-sm';
+        alertDiv.innerHTML = `
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">🩺</span>
+                    <span class="text-sm font-medium">${message}</span>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" class="text-white hover:text-gray-200 ml-2">
+                    ✕
+                </button>
+            </div>
+            <div class="mt-2 flex gap-2">
+                <button onclick="window.location.hash='home'; this.parentElement.parentElement.remove()" class="bg-white text-blue-500 px-3 py-1 rounded text-xs font-medium hover:bg-gray-100">
+                    Ir a medir
+                </button>
+                <button onclick="this.parentElement.parentElement.remove()" class="bg-blue-600 text-white px-3 py-1 rounded text-xs font-medium hover:bg-blue-700">
+                    Más tarde
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        // Auto-remover después de 30 segundos
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.parentNode.removeChild(alertDiv);
+            }
+        }, 30000);
+    }
+
+    getCurrentTime() {
+        const now = new Date();
+        return now.getHours().toString().padStart(2, '0') + ':' + 
+               now.getMinutes().toString().padStart(2, '0');
+    }
+
+    getCurrentDate() {
+        return new Date().toDateString();
+    }
+
+    checkScheduledNotifications() {
+        const currentTime = this.getCurrentTime();
+        const currentDate = this.getCurrentDate();
+        
+        this.scheduledTimes.forEach((schedule, index) => {
+            if (currentTime === schedule.time) {
+                // Verificar si ya se envió la notificación hoy
+                const notificationKey = `${currentDate}-${index}`;
+                if (!this.lastNotificationDate[notificationKey]) {
+                    this.showNotification('Recordatorio de Glucometría', schedule.message);
+                    this.lastNotificationDate[notificationKey] = true;
+                    
+                    // Limpiar notificaciones antiguas (más de 1 día)
+                    this.cleanOldNotifications();
+                }
+            }
+        });
+    }
+
+    cleanOldNotifications() {
+        const currentDate = this.getCurrentDate();
+        const keys = Object.keys(this.lastNotificationDate);
+        
+        keys.forEach(key => {
+            const [date] = key.split('-');
+            if (date !== currentDate) {
+                delete this.lastNotificationDate[key];
+            }
+        });
+    }
+
+    start() {
+        if (this.checkInterval) {
+            clearInterval(this.checkInterval);
+        }
+        
+        // Verificar cada minuto
+        this.checkInterval = setInterval(() => {
+            this.checkScheduledNotifications();
+        }, 60000); // 60 segundos
+        
+        // Verificar inmediatamente
+        this.checkScheduledNotifications();
+    }
+
+    stop() {
+        if (this.checkInterval) {
+            clearInterval(this.checkInterval);
+            this.checkInterval = null;
+        }
+    }
+
+    getStatus() {
+        return {
+            enabled: this.notificationsEnabled,
+            running: this.checkInterval !== null,
+            scheduledTimes: this.scheduledTimes
+        };
+    }
+}
+
+// Instancia global del programador de notificaciones
+const notificationScheduler = new NotificationScheduler();
+
+// Función para habilitar notificaciones
+async function enableNotifications() {
+    const enabled = await notificationScheduler.requestPermission();
+    if (enabled) {
+        notificationScheduler.start();
+        localStorage.setItem('notificationsEnabled', 'true');
+        showAlert('Notificaciones habilitadas correctamente. Recibirás recordatorios para medir tu glucosa.', 'success');
+        updateNotificationStatus();
+    } else {
+        showAlert('No se pudieron habilitar las notificaciones. Verifica los permisos del navegador.', 'warning');
+    }
+}
+
+// Función para deshabilitar notificaciones
+function disableNotifications() {
+    notificationScheduler.stop();
+    localStorage.setItem('notificationsEnabled', 'false');
+    showAlert('Notificaciones deshabilitadas.', 'success');
+    updateNotificationStatus();
+}
+
+// Función para actualizar el estado de las notificaciones en la UI
+function updateNotificationStatus() {
+    const status = notificationScheduler.getStatus();
+    const statusElement = document.getElementById('notificationStatus');
+    if (statusElement) {
+        statusElement.innerHTML = `
+            <div class="flex items-center justify-between">
+                <span class="text-sm ${status.enabled && status.running ? 'text-green-600' : 'text-gray-600'}">
+                    ${status.enabled && status.running ? '🔔 Activas' : '🔕 Inactivas'}
+                </span>
+                <button onclick="${status.enabled && status.running ? 'disableNotifications()' : 'enableNotifications()'}" 
+                        class="px-2 py-1 text-xs rounded ${status.enabled && status.running ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-green-100 text-green-600 hover:bg-green-200'}">
+                    ${status.enabled && status.running ? 'Desactivar' : 'Activar'}
+                </button>
+            </div>
+        `;
+    }
+}
