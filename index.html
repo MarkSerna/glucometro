@@ -92,6 +92,27 @@
 
         <!-- Contenido de las Pestañas -->
         <div class="tab-content active" id="homeContent">
+            <!-- Selector de Fecha -->
+            <div class="bg-white rounded-xl p-3 card-shadow mb-3">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-lg font-bold text-blue-600 flex items-center gap-1">
+                        📅 Fecha del Registro
+                    </h2>
+                    <button type="button" id="todayBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-3 py-1 rounded-lg text-xs transition-all duration-200">
+                        Hoy
+                    </button>
+                </div>
+                <div class="flex gap-2">
+                    <input type="date" id="recordDate" name="recordDate" 
+                           class="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-400 text-sm" 
+                           max="">
+                    <input type="time" id="recordTime" name="recordTime" 
+                           class="px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-400 text-sm" 
+                           value="">
+                </div>
+                <p class="text-xs text-gray-500 mt-1">💡 Seleccione la fecha y hora del registro para datos anteriores</p>
+            </div>
+            
             <form id="glucoseForm" class="space-y-3">
                 <!-- Desayuno -->
                 <div class="bg-white rounded-xl p-3 card-shadow">
@@ -238,10 +259,36 @@
                     </div>
                 </div>
                 
+                <!-- Filtros del historial -->
+                <div class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-semibold text-blue-800">🔍 Filtros</h3>
+                        <button id="clearFiltersBtn" class="text-xs text-blue-600 hover:text-blue-800 underline">Limpiar filtros</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs text-blue-700 font-medium">Desde:</label>
+                            <input type="date" id="filterDateFrom" class="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="text-xs text-blue-700 font-medium">Hasta:</label>
+                            <input type="date" id="filterDateTo" class="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:border-blue-500">
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <label class="text-xs text-blue-700 font-medium">Tipo de registro:</label>
+                        <select id="filterRecordType" class="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:border-blue-500">
+                            <option value="all">Todos los registros</option>
+                            <option value="complete">Solo registros completos</option>
+                            <option value="meal">Solo registros de comidas</option>
+                            <option value="alerts">Solo con alertas</option>
+                        </select>
+                    </div>
+                </div>
+                
                 <!-- Resumen del historial -->
-                <div class="mb-4 p-3 bg-gray-50 rounded-lg">
-                    <h3 class="text-sm font-semibold text-gray-800 mb-2">📊 Resumen</h3>
-                    <div id="historySummary" class="grid grid-cols-2 gap-2 text-xs"></div>
+                <div class="mb-4 p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200">
+                    <div id="historySummary" class="grid grid-cols-2 gap-3 text-xs"></div>
                 </div>
                 
                 <!-- Lista de registros -->

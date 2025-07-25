@@ -117,9 +117,6 @@ function handleFormSubmit(event) {
     // Mostrar la sección de resultados
     resultsSection.style.display = 'block';
     resultsSection.scrollIntoView({ behavior: 'smooth' });
-    
-    // Mostrar mensaje de éxito
-    showAlert('Registro guardado exitosamente en el historial.', 'success');
 }
 
 // Obtener datos del formulario
@@ -401,12 +398,28 @@ function generateRecommendations(analysis) {
 // Mostrar alerta temporal
 function showAlert(message, type = 'warning') {
     const alertDiv = document.createElement('div');
-    const alertClass = type === 'success' ? 'bg-green-100 border-green-300 text-green-800' : 
-                      type === 'danger' ? 'bg-red-100 border-red-300 text-red-800' : 
-                      'bg-yellow-100 border-yellow-300 text-yellow-800';
+    let alertClass, icon;
+    
+    switch(type) {
+        case 'success':
+            alertClass = 'bg-green-100 border-green-300 text-green-800';
+            icon = '✅';
+            break;
+        case 'danger':
+            alertClass = 'bg-red-100 border-red-300 text-red-800';
+            icon = '🚨';
+            break;
+        case 'info':
+            alertClass = 'bg-blue-100 border-blue-300 text-blue-800';
+            icon = 'ℹ️';
+            break;
+        default:
+            alertClass = 'bg-yellow-100 border-yellow-300 text-yellow-800';
+            icon = '⚠️';
+    }
     
     alertDiv.className = `${alertClass} p-4 rounded-xl mb-4 border-2 flex items-center gap-3 animate-fade-in`;
-    alertDiv.innerHTML = `<span class="text-xl">⚠️</span> <div>${message}</div>`;
+    alertDiv.innerHTML = `<span class="text-xl">${icon}</span> <div>${message}</div>`;
     
     // Insertar al inicio del contenedor de alertas
     alertsContainer.insertBefore(alertDiv, alertsContainer.firstChild);
@@ -437,8 +450,184 @@ function formatNumber(num, decimals = 1) {
     return Number(num).toFixed(decimals);
 }
 
+// Funciones para el selector de fecha
+function initializeDateSelector() {
+    const dateInput = document.getElementById('recordDate');
+    const timeInput = document.getElementById('recordTime');
+    const todayBtn = document.getElementById('todayBtn');
+    
+    // Establecer fecha y hora actual por defecto
+    const now = new Date();
+    dateInput.value = now.toISOString().split('T')[0];
+    timeInput.value = now.toTimeString().slice(0, 5);
+    
+    // Establecer fecha máxima como hoy
+    dateInput.max = now.toISOString().split('T')[0];
+    
+    // Cargar datos existentes para la fecha actual
+    loadDataForSelectedDate();
+    
+    // Event listener para cambio de fecha
+    dateInput.addEventListener('change', function() {
+        loadDataForSelectedDate();
+    });
+    
+    // Botón "Hoy" para establecer fecha y hora actual
+    todayBtn.addEventListener('click', function() {
+        const current = new Date();
+        dateInput.value = current.toISOString().split('T')[0];
+        timeInput.value = current.toTimeString().slice(0, 5);
+        
+        // Cargar datos para hoy
+        loadDataForSelectedDate();
+        
+        // Mostrar confirmación visual
+        const originalText = todayBtn.innerHTML;
+        todayBtn.innerHTML = '✅ Hoy';
+        todayBtn.classList.add('bg-green-500');
+        todayBtn.classList.remove('bg-blue-500');
+        
+        setTimeout(() => {
+            todayBtn.innerHTML = originalText;
+            todayBtn.classList.remove('bg-green-500');
+            todayBtn.classList.add('bg-blue-500');
+        }, 1500);
+    });
+}
+
+// Cargar datos existentes para la fecha seleccionada
+function loadDataForSelectedDate() {
+    const dateInput = document.getElementById('recordDate');
+    if (!dateInput.value) return;
+    
+    const selectedDate = new Date(dateInput.value).toLocaleDateString('es-ES');
+    const history = getHistory();
+    
+    // Buscar registros para la fecha seleccionada
+    const recordsForDate = history.filter(record => record.date === selectedDate);
+    
+    // Limpiar formulario primero
+    clearFormFields();
+    
+    if (recordsForDate.length === 0) {
+        showAlert(`No se encontraron registros para ${selectedDate}`, 'info');
+        return;
+    }
+    
+    // Buscar registro completo primero
+    let completeRecord = recordsForDate.find(record => record.type === 'complete');
+    
+    if (completeRecord) {
+        // Cargar datos del registro completo
+        loadCompleteRecord(completeRecord);
+        showAlert(`Datos cargados para ${selectedDate} (registro completo)`, 'success');
+    } else {
+        // Cargar registros individuales de comidas
+        loadMealRecords(recordsForDate, selectedDate);
+    }
+}
+
+// Limpiar campos del formulario
+function clearFormFields() {
+    document.getElementById('beforeBreakfast').value = '';
+    document.getElementById('afterBreakfast').value = '';
+    document.getElementById('insulinBreakfast').value = '';
+    document.getElementById('beforeLunch').value = '';
+    document.getElementById('afterLunch').value = '';
+    document.getElementById('insulinLunch').value = '';
+    document.getElementById('beforeDinner').value = '';
+    document.getElementById('afterDinner').value = '';
+    document.getElementById('insulinDinner').value = '';
+}
+
+// Cargar registro completo
+function loadCompleteRecord(record) {
+    const measurements = record.measurements;
+    
+    if (measurements.beforeBreakfast) document.getElementById('beforeBreakfast').value = measurements.beforeBreakfast;
+    if (measurements.afterBreakfast) document.getElementById('afterBreakfast').value = measurements.afterBreakfast;
+    if (measurements.insulinBreakfast) document.getElementById('insulinBreakfast').value = measurements.insulinBreakfast;
+    if (measurements.beforeLunch) document.getElementById('beforeLunch').value = measurements.beforeLunch;
+    if (measurements.afterLunch) document.getElementById('afterLunch').value = measurements.afterLunch;
+    if (measurements.insulinLunch) document.getElementById('insulinLunch').value = measurements.insulinLunch;
+    if (measurements.beforeDinner) document.getElementById('beforeDinner').value = measurements.beforeDinner;
+    if (measurements.afterDinner) document.getElementById('afterDinner').value = measurements.afterDinner;
+    if (measurements.insulinDinner) document.getElementById('insulinDinner').value = measurements.insulinDinner;
+}
+
+// Cargar registros individuales de comidas
+function loadMealRecords(records, selectedDate) {
+    let loadedMeals = [];
+    
+    records.forEach(record => {
+        if (record.type === 'meal' && record.mealType) {
+            const measurements = record.measurements;
+            
+            switch(record.mealType) {
+                case 'breakfast':
+                    if (measurements.beforeBreakfast) document.getElementById('beforeBreakfast').value = measurements.beforeBreakfast;
+                    if (measurements.afterBreakfast) document.getElementById('afterBreakfast').value = measurements.afterBreakfast;
+                    if (measurements.insulinBreakfast) document.getElementById('insulinBreakfast').value = measurements.insulinBreakfast;
+                    loadedMeals.push('Desayuno');
+                    break;
+                case 'lunch':
+                    if (measurements.beforeLunch) document.getElementById('beforeLunch').value = measurements.beforeLunch;
+                    if (measurements.afterLunch) document.getElementById('afterLunch').value = measurements.afterLunch;
+                    if (measurements.insulinLunch) document.getElementById('insulinLunch').value = measurements.insulinLunch;
+                    loadedMeals.push('Almuerzo');
+                    break;
+                case 'dinner':
+                    if (measurements.beforeDinner) document.getElementById('beforeDinner').value = measurements.beforeDinner;
+                    if (measurements.afterDinner) document.getElementById('afterDinner').value = measurements.afterDinner;
+                    if (measurements.insulinDinner) document.getElementById('insulinDinner').value = measurements.insulinDinner;
+                    loadedMeals.push('Cena');
+                    break;
+            }
+        }
+    });
+    
+    if (loadedMeals.length > 0) {
+        showAlert(`Datos cargados para ${selectedDate}: ${loadedMeals.join(', ')}`, 'success');
+    } else {
+        showAlert(`No se encontraron datos válidos para ${selectedDate}`, 'info');
+    }
+}
+
+// Obtener fecha y hora seleccionadas
+function getSelectedDateTime() {
+    const dateInput = document.getElementById('recordDate');
+    const timeInput = document.getElementById('recordTime');
+    
+    if (!dateInput.value || !timeInput.value) {
+        // Si no hay fecha/hora seleccionada, usar actual
+        const now = new Date();
+        return {
+            date: now.toLocaleDateString('es-ES'),
+            time: now.toLocaleTimeString('es-ES'),
+            timestamp: now.toISOString(),
+            dateObject: now
+        };
+    }
+    
+    // Crear objeto Date con la fecha y hora seleccionadas
+    const selectedDate = new Date(dateInput.value + 'T' + timeInput.value);
+    
+    return {
+        date: selectedDate.toLocaleDateString('es-ES'),
+        time: selectedDate.toLocaleTimeString('es-ES'),
+        timestamp: selectedDate.toISOString(),
+        dateObject: selectedDate
+    };
+}
+
 // Inicialización
 document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar selector de fecha
+    initializeDateSelector();
+    
+    // Inicializar filtros del historial
+    initializeHistoryFilters();
+    
     // Registrar todos los event listeners
     form.addEventListener('submit', handleFormSubmit);
     clearBtn.addEventListener('click', clearForm);
@@ -526,11 +715,13 @@ function exportData() {
 
 // Guardar registro completo en el historial
 function saveToHistory(formData, analysis) {
+    const selectedDateTime = getSelectedDateTime();
+    
     const record = {
-        id: Date.now(),
-        date: new Date().toLocaleDateString('es-ES'),
-        time: new Date().toLocaleTimeString('es-ES'),
-        timestamp: new Date().toISOString(),
+        id: selectedDateTime.dateObject.getTime(),
+        date: selectedDateTime.date,
+        time: selectedDateTime.time,
+        timestamp: selectedDateTime.timestamp,
         measurements: formData,
         statistics: analysis.statistics,
         alertsCount: analysis.alerts.length,
@@ -539,7 +730,21 @@ function saveToHistory(formData, analysis) {
     };
     
     const history = getHistory();
-    history.unshift(record);
+    
+    // Verificar si ya existe un registro para esta fecha y hora exacta
+    const existingIndex = history.findIndex(h => h.timestamp === record.timestamp && h.type === 'complete');
+    if (existingIndex !== -1) {
+        // Actualizar registro existente
+        history[existingIndex] = record;
+        showAlert('Registro actualizado para la fecha y hora seleccionada.', 'success');
+    } else {
+        // Agregar nuevo registro
+        history.unshift(record);
+        showAlert('Registro guardado para la fecha y hora seleccionada.', 'success');
+    }
+    
+    // Ordenar historial por timestamp (más reciente primero)
+    history.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     
     if (history.length > 100) {
         history.splice(100);
@@ -595,11 +800,13 @@ function saveMealData(mealType) {
     // Analizar solo los datos de esta comida
     const mealAnalysis = analyzeMealData(mealData, mealType);
     
+    const selectedDateTime = getSelectedDateTime();
+    
     const record = {
-        id: Date.now(),
-        date: new Date().toLocaleDateString('es-ES'),
-        time: new Date().toLocaleTimeString('es-ES'),
-        timestamp: new Date().toISOString(),
+        id: selectedDateTime.dateObject.getTime() + Math.random(), // Agregar random para evitar conflictos entre comidas
+        date: selectedDateTime.date,
+        time: selectedDateTime.time,
+        timestamp: selectedDateTime.timestamp,
         measurements: mealData,
         mealType: mealType,
         statistics: mealAnalysis.statistics,
@@ -609,7 +816,26 @@ function saveMealData(mealType) {
     };
     
     const history = getHistory();
-    history.unshift(record);
+    
+    // Verificar si ya existe un registro de esta comida para esta fecha
+    const existingIndex = history.findIndex(h => 
+        h.date === record.date && 
+        h.mealType === mealType && 
+        h.type === 'meal'
+    );
+    
+    if (existingIndex !== -1) {
+        // Actualizar registro existente de la comida
+        history[existingIndex] = record;
+        showAlert(`${getMealName(mealType)} actualizado para la fecha seleccionada.`, 'success');
+    } else {
+        // Agregar nuevo registro de comida
+        history.unshift(record);
+        showAlert(`${getMealName(mealType)} guardado para la fecha seleccionada.`, 'success');
+    }
+    
+    // Ordenar historial por timestamp (más reciente primero)
+    history.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     
     if (history.length > 100) {
         history.splice(100);
@@ -619,8 +845,6 @@ function saveMealData(mealType) {
     
     // Mostrar resultados de la comida
     displayMealResults(mealAnalysis, mealType);
-    
-    showAlert(`${getMealName(mealType)} guardado exitosamente.`, 'success');
 }
 
 // Obtener nombre de comida en español
@@ -815,8 +1039,107 @@ function displayHistory() {
         return;
     }
     
-    displayHistorySummary(history);
-    displayHistoryList(history);
+    // Aplicar filtros
+    const filteredHistory = applyHistoryFilters(history);
+    
+    // Verificar si hay registros después del filtrado
+    if (filteredHistory.length === 0 && history.length > 0) {
+        historySummaryContainer.innerHTML = `
+            <div class="p-8 text-center text-gray-500">
+                <div class="text-4xl mb-4">🔍</div>
+                <div class="text-lg font-medium">No se encontraron registros</div>
+                <div class="text-sm">Ajuste los filtros para ver más resultados</div>
+                <button onclick="clearHistoryFilters()" class="mt-3 px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors">
+                    Limpiar filtros
+                </button>
+            </div>
+        `;
+        historyListContainer.innerHTML = '';
+        return;
+    }
+    
+    displayHistorySummary(filteredHistory);
+    displayHistoryList(filteredHistory);
+}
+
+// Aplicar filtros al historial
+function applyHistoryFilters(history) {
+    const filterDateFrom = document.getElementById('filterDateFrom')?.value;
+    const filterDateTo = document.getElementById('filterDateTo')?.value;
+    const filterRecordType = document.getElementById('filterRecordType')?.value || 'all';
+    
+    let filtered = [...history];
+    
+    // Filtrar por fecha desde
+    if (filterDateFrom) {
+        const fromDate = new Date(filterDateFrom);
+        filtered = filtered.filter(record => {
+            const recordDate = new Date(record.timestamp);
+            return recordDate >= fromDate;
+        });
+    }
+    
+    // Filtrar por fecha hasta
+    if (filterDateTo) {
+        const toDate = new Date(filterDateTo);
+        toDate.setHours(23, 59, 59, 999); // Incluir todo el día
+        filtered = filtered.filter(record => {
+            const recordDate = new Date(record.timestamp);
+            return recordDate <= toDate;
+        });
+    }
+    
+    // Filtrar por tipo de registro
+    switch (filterRecordType) {
+        case 'complete':
+            filtered = filtered.filter(record => record.type === 'complete');
+            break;
+        case 'meal':
+            filtered = filtered.filter(record => record.type === 'meal');
+            break;
+        case 'alerts':
+            filtered = filtered.filter(record => record.alertsCount > 0);
+            break;
+        // 'all' no requiere filtrado adicional
+    }
+    
+    return filtered;
+}
+
+// Limpiar filtros del historial
+function clearHistoryFilters() {
+    document.getElementById('filterDateFrom').value = '';
+    document.getElementById('filterDateTo').value = '';
+    document.getElementById('filterRecordType').value = 'all';
+    
+    // Actualizar la vista del historial
+    displayHistory();
+    
+    showAlert('Filtros limpiados correctamente.', 'info');
+}
+
+// Inicializar filtros del historial
+function initializeHistoryFilters() {
+    const filterDateFrom = document.getElementById('filterDateFrom');
+    const filterDateTo = document.getElementById('filterDateTo');
+    const filterRecordType = document.getElementById('filterRecordType');
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+    
+    if (filterDateFrom) {
+        filterDateFrom.addEventListener('change', displayHistory);
+    }
+    
+    if (filterDateTo) {
+        filterDateTo.addEventListener('change', displayHistory);
+    }
+    
+    if (filterRecordType) {
+        filterRecordType.addEventListener('change', displayHistory);
+    }
+    
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', clearHistoryFilters);
+    }
 }
 
 
@@ -836,6 +1159,9 @@ function displayHistorySummary(history) {
     }, 0);
     
     const allReadings = [];
+    let totalInsulin = 0;
+    let alertsCount = 0;
+    
     history.forEach(record => {
         if (record.measurements.beforeBreakfast) allReadings.push(record.measurements.beforeBreakfast);
         if (record.measurements.afterBreakfast) allReadings.push(record.measurements.afterBreakfast);
@@ -843,6 +1169,14 @@ function displayHistorySummary(history) {
         if (record.measurements.afterLunch) allReadings.push(record.measurements.afterLunch);
         if (record.measurements.beforeDinner) allReadings.push(record.measurements.beforeDinner);
         if (record.measurements.afterDinner) allReadings.push(record.measurements.afterDinner);
+        
+        // Sumar insulina total
+        totalInsulin += (record.measurements.insulinBreakfast || 0);
+        totalInsulin += (record.measurements.insulinLunch || 0);
+        totalInsulin += (record.measurements.insulinDinner || 0);
+        
+        // Contar alertas
+        alertsCount += (record.alertsCount || 0);
     });
     
     const averageGlucose = allReadings.length > 0 ? 
@@ -860,22 +1194,71 @@ function displayHistorySummary(history) {
     const averageBadPercentage = allReadings.length > 0 ? 
         ((badReadings / allReadings.length) * 100).toFixed(1) : '0';
     
+    // Calcular rango de fechas
+    const dates = history.map(record => new Date(record.timestamp)).sort((a, b) => a - b);
+    const firstDate = dates[0]?.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) || 'N/A';
+    const lastDate = dates[dates.length - 1]?.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) || 'N/A';
+    
+    // Calcular días únicos
+    const uniqueDays = new Set(history.map(record => record.date)).size;
+    
     historySummaryContainer.innerHTML = `
-        <div class="bg-blue-100 p-2 rounded text-center">
-            <div class="text-lg font-bold text-blue-800">${totalRecords}</div>
-            <div class="text-xs text-blue-600">Días</div>
+        <!-- Título del resumen -->
+        <div class="col-span-2 mb-3">
+            <div class="flex items-center justify-between">
+                <h3 class="text-sm font-bold text-gray-800 flex items-center gap-2">
+                    📊 Resumen General
+                </h3>
+                <span class="text-xs text-gray-500">${firstDate} - ${lastDate}</span>
+            </div>
         </div>
-        <div class="bg-green-100 p-2 rounded text-center">
-            <div class="text-lg font-bold text-green-800">${totalReadings}</div>
-            <div class="text-xs text-green-600">Mediciones</div>
+        
+        <!-- Estadísticas principales -->
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg border border-blue-200 text-center hover:shadow-md transition-shadow duration-200">
+            <div class="text-xl font-bold text-blue-800">${uniqueDays}</div>
+            <div class="text-xs text-blue-600 font-medium">Días registrados</div>
+            <div class="text-xs text-blue-500 mt-1">${totalRecords} entradas</div>
         </div>
-        <div class="bg-purple-100 p-2 rounded text-center">
-            <div class="text-lg font-bold text-purple-800">${averageGlucose}</div>
-            <div class="text-xs text-purple-600">Promedio</div>
+        
+        <div class="bg-gradient-to-br from-green-50 to-green-100 p-3 rounded-lg border border-green-200 text-center hover:shadow-md transition-shadow duration-200">
+            <div class="text-xl font-bold text-green-800">${totalReadings}</div>
+            <div class="text-xs text-green-600 font-medium">Mediciones</div>
+            <div class="text-xs text-green-500 mt-1">${(totalReadings / uniqueDays).toFixed(1)} por día</div>
         </div>
-        <div class="bg-red-100 p-2 rounded text-center">
-            <div class="text-lg font-bold text-red-800">${averageBadPercentage}%</div>
-            <div class="text-xs text-red-600">Malos</div>
+        
+        <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-3 rounded-lg border border-purple-200 text-center hover:shadow-md transition-shadow duration-200">
+            <div class="text-xl font-bold text-purple-800">${averageGlucose}</div>
+            <div class="text-xs text-purple-600 font-medium">Promedio glucosa</div>
+            <div class="text-xs text-purple-500 mt-1">mg/dL</div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-3 rounded-lg border border-orange-200 text-center hover:shadow-md transition-shadow duration-200">
+            <div class="text-xl font-bold text-orange-800">${totalInsulin}</div>
+            <div class="text-xs text-orange-600 font-medium">Insulina total</div>
+            <div class="text-xs text-orange-500 mt-1">unidades</div>
+        </div>
+        
+        <!-- Indicadores de salud -->
+        <div class="col-span-2 grid grid-cols-2 gap-2 mt-2">
+            <div class="bg-gradient-to-br ${averageBadPercentage <= 20 ? 'from-green-50 to-green-100 border-green-200' : averageBadPercentage <= 40 ? 'from-yellow-50 to-yellow-100 border-yellow-200' : 'from-red-50 to-red-100 border-red-200'} p-3 rounded-lg border text-center hover:shadow-md transition-shadow duration-200">
+                <div class="text-lg font-bold ${averageBadPercentage <= 20 ? 'text-green-800' : averageBadPercentage <= 40 ? 'text-yellow-800' : 'text-red-800'}">
+                    ${averageBadPercentage <= 20 ? '✅' : averageBadPercentage <= 40 ? '⚠️' : '🚨'} ${averageBadPercentage}%
+                </div>
+                <div class="text-xs ${averageBadPercentage <= 20 ? 'text-green-600' : averageBadPercentage <= 40 ? 'text-yellow-600' : 'text-red-600'} font-medium">Lecturas altas</div>
+                <div class="text-xs ${averageBadPercentage <= 20 ? 'text-green-500' : averageBadPercentage <= 40 ? 'text-yellow-500' : 'text-red-500'} mt-1">
+                    ${averageBadPercentage <= 20 ? 'Excelente control' : averageBadPercentage <= 40 ? 'Control regular' : 'Requiere atención'}
+                </div>
+            </div>
+            
+            <div class="bg-gradient-to-br ${alertsCount === 0 ? 'from-green-50 to-green-100 border-green-200' : alertsCount <= 5 ? 'from-yellow-50 to-yellow-100 border-yellow-200' : 'from-red-50 to-red-100 border-red-200'} p-3 rounded-lg border text-center hover:shadow-md transition-shadow duration-200">
+                <div class="text-lg font-bold ${alertsCount === 0 ? 'text-green-800' : alertsCount <= 5 ? 'text-yellow-800' : 'text-red-800'}">
+                    ${alertsCount === 0 ? '🎉' : alertsCount <= 5 ? '⚠️' : '🚨'} ${alertsCount}
+                </div>
+                <div class="text-xs ${alertsCount === 0 ? 'text-green-600' : alertsCount <= 5 ? 'text-yellow-600' : 'text-red-600'} font-medium">Alertas totales</div>
+                <div class="text-xs ${alertsCount === 0 ? 'text-green-500' : alertsCount <= 5 ? 'text-yellow-500' : 'text-red-500'} mt-1">
+                    ${alertsCount === 0 ? 'Sin problemas' : alertsCount <= 5 ? 'Pocas alertas' : 'Muchas alertas'}
+                </div>
+            </div>
         </div>
     `;
 }
@@ -889,8 +1272,10 @@ function displayHistoryList(history) {
     
     const listHTML = history.map((record, index) => {
         const date = new Date(record.timestamp).toLocaleDateString('es-ES', {
+            weekday: 'short',
             day: 'numeric',
-            month: 'short'
+            month: 'short',
+            year: 'numeric'
         });
         
         const time = new Date(record.timestamp).toLocaleTimeString('es-ES', {
@@ -904,52 +1289,167 @@ function displayHistoryList(history) {
         // Asegurar que badPercentage esté definido
         const badPercentage = stats && typeof stats.badPercentage === 'number' ? stats.badPercentage : 0;
         
+        // Calcular promedio de glucosa para este registro
+        const glucoseReadings = [];
+        if (measurements.beforeBreakfast) glucoseReadings.push(measurements.beforeBreakfast);
+        if (measurements.afterBreakfast) glucoseReadings.push(measurements.afterBreakfast);
+        if (measurements.beforeLunch) glucoseReadings.push(measurements.beforeLunch);
+        if (measurements.afterLunch) glucoseReadings.push(measurements.afterLunch);
+        if (measurements.beforeDinner) glucoseReadings.push(measurements.beforeDinner);
+        if (measurements.afterDinner) glucoseReadings.push(measurements.afterDinner);
+        
+        const avgGlucose = glucoseReadings.length > 0 ? 
+            (glucoseReadings.reduce((sum, val) => sum + val, 0) / glucoseReadings.length).toFixed(1) : 'N/A';
+        
+        // Calcular total de insulina
+        const totalInsulin = (measurements.insulinBreakfast || 0) + 
+                            (measurements.insulinLunch || 0) + 
+                            (measurements.insulinDinner || 0);
+        
+        // Determinar el tipo de registro
+        const recordType = record.type === 'complete' ? 'Completo' : 
+                          record.mealType ? getMealName(record.mealType) : 'Parcial';
+        
         return `
-            <div class="border-b border-gray-200 p-3 hover:bg-gray-50 transition-colors duration-200">
-                <div class="flex justify-between items-center mb-2">
-                    <div>
-                        <h3 class="text-sm font-semibold text-gray-800">${date}</h3>
-                        <p class="text-xs text-gray-600">${time}</p>
+            <div class="bg-white border border-gray-200 rounded-lg p-4 mb-3 hover:shadow-md transition-all duration-200 hover:border-blue-300">
+                <!-- Header del registro -->
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <h3 class="text-sm font-bold text-gray-800">${date}</h3>
+                            <span class="px-2 py-1 text-xs font-medium rounded-full ${
+                                record.type === 'complete' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'
+                            }">
+                                ${recordType}
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-500 flex items-center gap-1">
+                            🕐 ${time}
+                        </p>
                     </div>
-                    <div class="flex gap-1">
-                        <span class="px-2 py-1 text-xs font-medium rounded ${
-                            badPercentage <= 20 ? 'bg-green-100 text-green-800' :
-                            badPercentage <= 40 ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
-                        }">
-                            ${badPercentage}%
-                        </span>
-                        <button data-index="${index}" class="delete-record-btn px-2 py-1 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200">
+                    <div class="flex items-center gap-2">
+                        <div class="text-right">
+                            <div class="text-xs text-gray-500">Estado</div>
+                            <span class="px-2 py-1 text-xs font-bold rounded-full ${
+                                badPercentage <= 20 ? 'bg-green-100 text-green-700' :
+                                badPercentage <= 40 ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-red-100 text-red-700'
+                            }">
+                                ${badPercentage <= 20 ? '✅ Excelente' : badPercentage <= 40 ? '⚠️ Regular' : '🚨 Atención'}
+                            </span>
+                        </div>
+                        <button data-index="${index}" class="delete-record-btn p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors duration-200" title="Eliminar registro">
                             🗑️
                         </button>
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-3 gap-2 text-xs">
-                    ${measurements.beforeBreakfast || measurements.afterBreakfast ? `
-                        <div class="bg-orange-50 p-2 rounded border border-orange-200">
-                            <div class="font-medium text-orange-800 mb-1">🌅</div>
-                            ${measurements.beforeBreakfast ? `<div>A: ${measurements.beforeBreakfast}</div>` : ''}
-                            ${measurements.afterBreakfast ? `<div>D: ${measurements.afterBreakfast}</div>` : ''}
-                        </div>
-                    ` : '<div></div>'}
-                    
-                    ${measurements.beforeLunch || measurements.afterLunch ? `
-                        <div class="bg-yellow-50 p-2 rounded border border-yellow-200">
-                            <div class="font-medium text-yellow-800 mb-1">☀️</div>
-                            ${measurements.beforeLunch ? `<div>A: ${measurements.beforeLunch}</div>` : ''}
-                            ${measurements.afterLunch ? `<div>D: ${measurements.afterLunch}</div>` : ''}
-                        </div>
-                    ` : '<div></div>'}
-                    
-                    ${measurements.beforeDinner || measurements.afterDinner ? `
-                        <div class="bg-purple-50 p-2 rounded border border-purple-200">
-                            <div class="font-medium text-purple-800 mb-1">🌙</div>
-                            ${measurements.beforeDinner ? `<div>A: ${measurements.beforeDinner}</div>` : ''}
-                            ${measurements.afterDinner ? `<div>D: ${measurements.afterDinner}</div>` : ''}
-                        </div>
-                    ` : '<div></div>'}
+                <!-- Estadísticas rápidas -->
+                <div class="grid grid-cols-3 gap-2 mb-3 text-xs">
+                    <div class="bg-blue-50 p-2 rounded-lg text-center border border-blue-200">
+                        <div class="font-bold text-blue-700">${avgGlucose}</div>
+                        <div class="text-blue-600">Promedio</div>
+                    </div>
+                    <div class="bg-purple-50 p-2 rounded-lg text-center border border-purple-200">
+                        <div class="font-bold text-purple-700">${totalInsulin}</div>
+                        <div class="text-purple-600">Insulina</div>
+                    </div>
+                    <div class="bg-gray-50 p-2 rounded-lg text-center border border-gray-200">
+                        <div class="font-bold text-gray-700">${glucoseReadings.length}</div>
+                        <div class="text-gray-600">Mediciones</div>
+                    </div>
                 </div>
+                
+                <!-- Mediciones por comida -->
+                <div class="grid grid-cols-1 gap-2 text-xs">
+                    ${measurements.beforeBreakfast || measurements.afterBreakfast || measurements.insulinBreakfast ? `
+                        <div class="bg-gradient-to-r from-orange-50 to-orange-100 p-3 rounded-lg border border-orange-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg">🌅</span>
+                                    <span class="font-semibold text-orange-800">Desayuno</span>
+                                </div>
+                                ${measurements.insulinBreakfast ? `<span class="bg-orange-200 text-orange-800 px-2 py-1 rounded-full font-medium">${measurements.insulinBreakfast}u</span>` : ''}
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${measurements.beforeBreakfast ? `
+                                    <div class="bg-white p-2 rounded border">
+                                        <div class="text-orange-600 font-medium">Antes</div>
+                                        <div class="text-lg font-bold text-orange-800">${measurements.beforeBreakfast} <span class="text-xs font-normal">mg/dL</span></div>
+                                    </div>
+                                ` : '<div class="bg-gray-100 p-2 rounded border text-center text-gray-400">Sin datos</div>'}
+                                ${measurements.afterBreakfast ? `
+                                    <div class="bg-white p-2 rounded border">
+                                        <div class="text-orange-600 font-medium">Después</div>
+                                        <div class="text-lg font-bold text-orange-800">${measurements.afterBreakfast} <span class="text-xs font-normal">mg/dL</span></div>
+                                    </div>
+                                ` : '<div class="bg-gray-100 p-2 rounded border text-center text-gray-400">Sin datos</div>'}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${measurements.beforeLunch || measurements.afterLunch || measurements.insulinLunch ? `
+                        <div class="bg-gradient-to-r from-yellow-50 to-yellow-100 p-3 rounded-lg border border-yellow-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg">☀️</span>
+                                    <span class="font-semibold text-yellow-800">Almuerzo</span>
+                                </div>
+                                ${measurements.insulinLunch ? `<span class="bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full font-medium">${measurements.insulinLunch}u</span>` : ''}
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${measurements.beforeLunch ? `
+                                    <div class="bg-white p-2 rounded border">
+                                        <div class="text-yellow-600 font-medium">Antes</div>
+                                        <div class="text-lg font-bold text-yellow-800">${measurements.beforeLunch} <span class="text-xs font-normal">mg/dL</span></div>
+                                    </div>
+                                ` : '<div class="bg-gray-100 p-2 rounded border text-center text-gray-400">Sin datos</div>'}
+                                ${measurements.afterLunch ? `
+                                    <div class="bg-white p-2 rounded border">
+                                        <div class="text-yellow-600 font-medium">Después</div>
+                                        <div class="text-lg font-bold text-yellow-800">${measurements.afterLunch} <span class="text-xs font-normal">mg/dL</span></div>
+                                    </div>
+                                ` : '<div class="bg-gray-100 p-2 rounded border text-center text-gray-400">Sin datos</div>'}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${measurements.beforeDinner || measurements.afterDinner || measurements.insulinDinner ? `
+                        <div class="bg-gradient-to-r from-purple-50 to-purple-100 p-3 rounded-lg border border-purple-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg">🌙</span>
+                                    <span class="font-semibold text-purple-800">Cena</span>
+                                </div>
+                                ${measurements.insulinDinner ? `<span class="bg-purple-200 text-purple-800 px-2 py-1 rounded-full font-medium">${measurements.insulinDinner}u</span>` : ''}
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${measurements.beforeDinner ? `
+                                    <div class="bg-white p-2 rounded border">
+                                        <div class="text-purple-600 font-medium">Antes</div>
+                                        <div class="text-lg font-bold text-purple-800">${measurements.beforeDinner} <span class="text-xs font-normal">mg/dL</span></div>
+                                    </div>
+                                ` : '<div class="bg-gray-100 p-2 rounded border text-center text-gray-400">Sin datos</div>'}
+                                ${measurements.afterDinner ? `
+                                    <div class="bg-white p-2 rounded border">
+                                        <div class="text-purple-600 font-medium">Después</div>
+                                        <div class="text-lg font-bold text-purple-800">${measurements.afterDinner} <span class="text-xs font-normal">mg/dL</span></div>
+                                    </div>
+                                ` : '<div class="bg-gray-100 p-2 rounded border text-center text-gray-400">Sin datos</div>'}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <!-- Indicadores de alerta si existen -->
+                ${record.alertsCount > 0 ? `
+                    <div class="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg">
+                        <div class="flex items-center gap-2 text-red-700">
+                            <span>⚠️</span>
+                            <span class="text-xs font-medium">${record.alertsCount} alerta${record.alertsCount > 1 ? 's' : ''} detectada${record.alertsCount > 1 ? 's' : ''}</span>
+                        </div>
+                    </div>
+                ` : ''}
             </div>
         `;
     }).join('');
