@@ -43,7 +43,8 @@ tabButtons.forEach(button => {
         
         // Load statistics when stats tab is clicked
         if (tabId === 'statsContent') {
-            displayHistorySummary();
+            const history = JSON.parse(localStorage.getItem('glucoseHistory') || '[]');
+            displayHistorySummary(history);
             displayTrends();
         }
     });
