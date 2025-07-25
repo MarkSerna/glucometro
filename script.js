@@ -1885,6 +1885,8 @@ class NotificationScheduler {
         this.notificationsEnabled = false;
         this.checkInterval = null;
         this.lastNotificationDate = {};
+        this.missingDataInterval = null;
+        this.lastMissingDataCheck = null;
     }
 
     async requestPermission() {
@@ -1911,25 +1913,52 @@ class NotificationScheduler {
         this.showInAppAlert(message);
     }
 
-    showInAppAlert(message) {
+    showInAppAlert(message, type = 'info') {
         // Crear una alerta visual en la aplicación
         const alertDiv = document.createElement('div');
-        alertDiv.className = 'fixed top-4 right-4 bg-blue-500 text-white p-4 rounded-lg shadow-lg z-50 max-w-sm';
+        
+        let bgColor, textColor, buttonBg, buttonText;
+        let icon = '🩺';
+        
+        switch(type) {
+            case 'warning':
+                bgColor = 'bg-yellow-500';
+                textColor = 'text-white';
+                buttonBg = 'bg-white';
+                buttonText = 'text-yellow-500';
+                icon = '⚠️';
+                break;
+            case 'error':
+                bgColor = 'bg-red-500';
+                textColor = 'text-white';
+                buttonBg = 'bg-white';
+                buttonText = 'text-red-500';
+                icon = '🚨';
+                break;
+            default:
+                bgColor = 'bg-blue-500';
+                textColor = 'text-white';
+                buttonBg = 'bg-white';
+                buttonText = 'text-blue-500';
+                icon = '🩺';
+        }
+        
+        alertDiv.className = `fixed top-4 right-4 ${bgColor} ${textColor} p-4 rounded-lg shadow-lg z-50 max-w-sm animate-fade-in`;
         alertDiv.innerHTML = `
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <span class="text-xl">🩺</span>
+                    <span class="text-xl">${icon}</span>
                     <span class="text-sm font-medium">${message}</span>
                 </div>
-                <button onclick="this.parentElement.parentElement.remove()" class="text-white hover:text-gray-200 ml-2">
+                <button onclick="this.parentElement.parentElement.remove()" class="${textColor} hover:opacity-70 ml-2">
                     ✕
                 </button>
             </div>
             <div class="mt-2 flex gap-2">
-                <button onclick="window.location.hash='home'; this.parentElement.parentElement.remove()" class="bg-white text-blue-500 px-3 py-1 rounded text-xs font-medium hover:bg-gray-100">
+                <button onclick="document.getElementById('homeTab').click(); this.parentElement.parentElement.remove()" class="${buttonBg} ${buttonText} px-3 py-1 rounded text-xs font-medium hover:opacity-80">
                     Ir a medir
                 </button>
-                <button onclick="this.parentElement.parentElement.remove()" class="bg-blue-600 text-white px-3 py-1 rounded text-xs font-medium hover:bg-blue-700">
+                <button onclick="this.parentElement.parentElement.remove()" class="${bgColor.replace('bg-', 'bg-opacity-80 bg-')} ${textColor} px-3 py-1 rounded text-xs font-medium hover:opacity-80">
                     Más tarde
                 </button>
             </div>
@@ -1998,6 +2027,9 @@ class NotificationScheduler {
         
         // Verificar inmediatamente
         this.checkScheduledNotifications();
+        
+        // Iniciar verificación de datos faltantes cada hora
+        this.startMissingDataCheck();
     }
 
     stop() {
@@ -2005,6 +2037,84 @@ class NotificationScheduler {
             clearInterval(this.checkInterval);
             this.checkInterval = null;
         }
+        if (this.missingDataInterval) {
+            clearInterval(this.missingDataInterval);
+            this.missingDataInterval = null;
+        }
+    }
+
+    startMissingDataCheck() {
+        // Verificar inmediatamente al iniciar
+        this.checkMissingData();
+        
+        // Luego verificar cada hora
+        if (!this.missingDataInterval) {
+            this.missingDataInterval = setInterval(() => {
+                this.checkMissingData();
+            }, 3600000); // 3600000ms = 1 hora
+        }
+    }
+
+    checkMissingData() {
+        const today = new Date();
+        const history = JSON.parse(localStorage.getItem('glucoseHistory') || '[]');
+        const missingDays = this.findMissingDataDays(history, today);
+        
+        if (missingDays.length > 0) {
+            const oldestMissingDay = missingDays[missingDays.length - 1];
+            const daysAgo = Math.floor((today - oldestMissingDay) / (1000 * 60 * 60 * 24));
+            
+            let message;
+            if (daysAgo === 1) {
+                message = '⚠️ Tienes datos pendientes de ayer. ¡Completa tu registro de glucosa!';
+            } else {
+                message = `⚠️ Tienes datos pendientes de hace ${daysAgo} días. ¡Completa tus registros de glucosa!`;
+            }
+            
+            this.showNotification('Datos Faltantes', message);
+            this.showInAppAlert(message, 'warning');
+        }
+    }
+
+    findMissingDataDays(history, currentDate) {
+        const missingDays = [];
+        const today = new Date(currentDate);
+        today.setHours(0, 0, 0, 0);
+        
+        // Verificar los últimos 30 días
+        for (let i = 1; i <= 30; i++) {
+            const checkDate = new Date(today);
+            checkDate.setDate(today.getDate() - i);
+            
+            const dateString = checkDate.toISOString().split('T')[0];
+            
+            // Buscar si existe un registro completo para esta fecha
+            const hasCompleteRecord = history.some(record => {
+                const recordDate = new Date(record.timestamp);
+                recordDate.setHours(0, 0, 0, 0);
+                const recordDateString = recordDate.toISOString().split('T')[0];
+                
+                return recordDateString === dateString && 
+                       record.type === 'complete' && 
+                       this.isRecordComplete(record);
+            });
+            
+            if (!hasCompleteRecord) {
+                missingDays.push(checkDate);
+            }
+        }
+        
+        return missingDays;
+    }
+
+    isRecordComplete(record) {
+        const measurements = record.measurements;
+        return measurements.beforeBreakfast && 
+               measurements.afterBreakfast && 
+               measurements.beforeLunch && 
+               measurements.afterLunch && 
+               measurements.beforeDinner && 
+               measurements.afterDinner;
     }
 
     getStatus() {
