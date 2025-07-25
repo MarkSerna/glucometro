@@ -47,6 +47,11 @@ tabButtons.forEach(button => {
             displayHistorySummary(history);
             displayTrends();
         }
+        
+        // Update notification status when settings tab is clicked
+        if (tabId === 'settingsContent') {
+            updateNotificationStatus();
+        }
     });
 });
 
@@ -2170,5 +2175,13 @@ function updateNotificationStatus() {
                 </button>
             </div>
         `;
+    } else {
+        // Si el elemento no está disponible, intentar de nuevo después de un breve delay
+        setTimeout(() => {
+            const retryElement = document.getElementById('notificationStatus');
+            if (retryElement) {
+                updateNotificationStatus();
+            }
+        }, 100);
     }
 }
