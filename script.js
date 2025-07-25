@@ -724,6 +724,88 @@ function getSelectedDateTime() {
     };
 }
 
+// Registrar Service Worker para PWA
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(registration => {
+                console.log('Service Worker registrado exitosamente:', registration.scope);
+                
+                // Mostrar banner de instalación si está disponible
+                let deferredPrompt;
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    console.log('PWA: Evento beforeinstallprompt disparado');
+                    e.preventDefault();
+                    deferredPrompt = e;
+                    showInstallBanner(deferredPrompt);
+                });
+                
+                // Detectar cuando la app fue instalada
+                window.addEventListener('appinstalled', (evt) => {
+                    console.log('PWA: App instalada exitosamente');
+                    showAlert('¡Glucómetro Digital instalado correctamente en tu dispositivo!', 'success');
+                    hideInstallBanner();
+                });
+            })
+            .catch(error => {
+                console.log('Service Worker: Error en el registro:', error);
+            });
+    });
+}
+
+// Función para mostrar banner de instalación
+function showInstallBanner(deferredPrompt) {
+    // Crear banner de instalación si no existe
+    if (!document.getElementById('installBanner')) {
+        const banner = document.createElement('div');
+        banner.id = 'installBanner';
+        banner.className = 'fixed top-0 left-0 right-0 bg-blue-600 text-white p-3 z-50 flex items-center justify-between shadow-lg';
+        banner.innerHTML = `
+            <div class="flex items-center gap-2">
+                <span class="text-lg">📱</span>
+                <span class="text-sm font-medium">¡Instala Glucómetro Digital en tu dispositivo!</span>
+            </div>
+            <div class="flex gap-2">
+                <button id="installBtn" class="bg-white text-blue-600 px-3 py-1 rounded text-sm font-semibold hover:bg-gray-100 transition-colors">
+                    Instalar
+                </button>
+                <button id="dismissBtn" class="text-white hover:text-gray-200 text-lg">
+                    ✕
+                </button>
+            </div>
+        `;
+        
+        document.body.prepend(banner);
+        
+        // Ajustar padding del body para compensar el banner
+        document.body.style.paddingTop = '60px';
+        
+        // Event listeners para los botones
+        document.getElementById('installBtn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`PWA: Usuario ${outcome} la instalación`);
+                deferredPrompt = null;
+                hideInstallBanner();
+            }
+        });
+        
+        document.getElementById('dismissBtn').addEventListener('click', () => {
+            hideInstallBanner();
+        });
+    }
+}
+
+// Función para ocultar banner de instalación
+function hideInstallBanner() {
+    const banner = document.getElementById('installBanner');
+    if (banner) {
+        banner.remove();
+        document.body.style.paddingTop = '0';
+    }
+}
+
 // Inicialización
 document.addEventListener('DOMContentLoaded', function() {
     // Inicializar selector de fecha

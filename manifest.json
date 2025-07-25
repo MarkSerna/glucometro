@@ -1,0 +1,43 @@
+{
+  "name": "Glucómetro Digital",
+  "short_name": "Glucómetro",
+  "description": "Aplicación para el monitoreo y registro de niveles de glucosa en sangre",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3B82F6",
+  "orientation": "portrait",
+  "scope": "./",
+  "lang": "es",
+  "categories": ["health", "medical", "lifestyle"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiByeD0iMjQiIGZpbGw9IiMzQjgyRjYiLz4KPHN2ZyB4PSI0OCIgeT0iNDgiIHdpZHRoPSI5NiIgaGVpZ2h0PSI5NiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIj4KPHA+aCBkPSJNMTIgMkM2LjQ4IDIgMiA2LjQ4IDIgMTJzNC40OCAxMCAxMCAxMCAxMC00LjQ4IDEwLTEwUzE3LjUyIDIgMTIgMnoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0xMiA2djZsNCAyIiBzdHJva2U9IiMzQjgyRjYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjIiIGZpbGw9IiMzQjgyRjYiLz4KPC9zdmc+Cjwvc3ZnPgo=",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiByeD0iNjQiIGZpbGw9IiMzQjgyRjYiLz4KPHN2ZyB4PSIxMjgiIHk9IjEyOCIgd2lkdGg9IjI1NiIgaGVpZ2h0PSIyNTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxwYXRoIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyeiIgZmlsbD0id2hpdGUiLz4KPHA+aCBkPSJNMTIgNnY2bDQgMiIgc3Ryb2tlPSIjM0I4MkY2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIyIiBmaWxsPSIjM0I4MkY2Ii8+Cjwvc3ZnPgo8L3N2Zz4K",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjU2OCIgdmlld0JveD0iMCAwIDMyMCA1NjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMjAiIGhlaWdodD0iNTY4IiBmaWxsPSIjRjNGNEY2Ii8+CjxyZWN0IHg9IjE2IiB5PSIxNiIgd2lkdGg9IjI4OCIgaGVpZ2h0PSI1MzYiIHJ4PSIxNiIgZmlsbD0id2hpdGUiLz4KPHN2ZyB4PSI0OCIgeT0iNDgiIHdpZHRoPSIyMjQiIGhlaWdodD0iNDcyIj4KPHN2ZyB3aWR0aD0iMjI0IiBoZWlnaHQ9IjQ3MiIgdmlld0JveD0iMCAwIDIyNCA0NzIiIGZpbGw9Im5vbmUiPgo8dGV4dCB4PSIxMTIiIHk9IjQwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjM0I4MkY2IiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCI+R2x1Y8OzbWV0cm88L3RleHQ+CjxyZWN0IHg9IjAiIHk9IjgwIiB3aWR0aD0iMjI0IiBoZWlnaHQ9IjEyMCIgcng9IjgiIGZpbGw9IiNGRkY3RUQiIHN0cm9rZT0iI0Y1OUUwQiIgc3Ryb2tlLXdpZHRoPSIyIi8+Cjx0ZXh0IHg9IjE2IiB5PSIxMDAiIGZpbGw9IiNEOTI2MDkiIGZvbnQtc2l6ZT0iMTYiIGZvbnQtd2VpZ2h0PSJib2xkIj7wn42FIERlc2F5dW5vPC90ZXh0Pgo8cmVjdCB4PSIwIiB5PSIyMjAiIHdpZHRoPSIyMjQiIGhlaWdodD0iMTIwIiByeD0iOCIgZmlsbD0iI0ZFRkNFOCIgc3Ryb2tlPSIjRUFCMzA4IiBzdHJva2Utd2lkdGg9IjIiLz4KPHR4dCB4PSIxNiIgeT0iMjQwIiBmaWxsPSIjOTI0MDA2IiBmb250LXNpemU9IjE2IiBmb250LXdlaWdodD0iYm9sZCI+4piAIEFsbXVlcnpvPC90ZXh0Pgo8cmVjdCB4PSIwIiB5PSIzNjAiIHdpZHRoPSIyMjQiIGhlaWdodD0iMTIwIiByeD0iOCIgZmlsbD0iI0ZBRjVGRiIgc3Ryb2tlPSIjOEI1Q0Y2IiBzdHJva2Utd2lkdGg9IjIiLz4KPHR4dCB4PSIxNiIgeT0iMzgwIiBmaWxsPSIjNTUxQThmIiBmb250LXNpemU9IjE2IiBmb250LXdlaWdodD0iYm9sZCI+8J+MmSBDZW5hPC90ZXh0Pgo8L3N2Zz4KPC9zdmc+Cjwvc3ZnPgo=",
+      "sizes": "320x568",
+      "type": "image/svg+xml",
+      "form_factor": "narrow"
+    }
+  ],
+  "features": [
+    "Cross Platform",
+    "fast",
+    "simple"
+  ],
+  "edge_side_panel": {
+    "preferred_width": 320
+  }
+}
