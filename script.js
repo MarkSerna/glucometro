@@ -40,6 +40,11 @@ tabButtons.forEach(button => {
         if (tabId === 'historyContent') {
             displayHistory();
         }
+        
+        // Load statistics when stats tab is clicked
+        if (tabId === 'statsContent') {
+            displayHistorySummary();
+        }
     });
 });
 
