@@ -849,12 +849,26 @@ document.addEventListener('DOMContentLoaded', function() {
     updateNotificationStatus();
     
     // Auto-iniciar notificaciones si ya están habilitadas y tenemos permisos
-    if (localStorage.getItem('notificationsEnabled') === 'true' && 
-        'Notification' in window && Notification.permission === 'granted') {
-        notificationScheduler.notificationsEnabled = true;
-        notificationScheduler.start();
-        updateNotificationStatus();
+    console.log('Verificando auto-inicio de notificaciones...');
+    const savedEnabled = localStorage.getItem('notificationsEnabled');
+    console.log('Estado guardado en localStorage:', savedEnabled);
+    
+    if (savedEnabled === 'true' && 'Notification' in window) {
+        console.log('Permisos del navegador:', Notification.permission);
+        
+        if (Notification.permission === 'granted') {
+            console.log('Auto-iniciando notificaciones...');
+            notificationScheduler.notificationsEnabled = true;
+            notificationScheduler.start();
+        } else if (Notification.permission === 'denied') {
+            console.log('Permisos denegados, limpiando estado guardado...');
+            localStorage.setItem('notificationsEnabled', 'false');
+            notificationScheduler.notificationsEnabled = false;
+        }
     }
+    
+    // Actualizar UI independientemente del estado
+    updateNotificationStatus();
     
     // Delegación de eventos para botones de eliminar del historial
     if (historyListContainer) {
@@ -1901,19 +1915,47 @@ class NotificationScheduler {
     }
 
     async requestPermission() {
-        if ('Notification' in window) {
-            // Verificar si ya tenemos permisos
-            if (Notification.permission === 'granted') {
-                this.notificationsEnabled = true;
-                return true;
-            }
-            
-            // Si no tenemos permisos, solicitarlos
-            const permission = await Notification.requestPermission();
-            this.notificationsEnabled = permission === 'granted';
-            return this.notificationsEnabled;
+        console.log('Solicitando permisos de notificación...');
+        
+        if (!('Notification' in window)) {
+            console.log('Las notificaciones no están soportadas en este navegador');
+            return false;
         }
-        return false;
+        
+        console.log('Estado actual de permisos:', Notification.permission);
+        
+        // Verificar si ya tenemos permisos
+        if (Notification.permission === 'granted') {
+            console.log('Permisos ya concedidos');
+            this.notificationsEnabled = true;
+            localStorage.setItem('notificationsEnabled', 'true');
+            return true;
+        }
+        
+        // Si están denegados, no podemos hacer nada
+        if (Notification.permission === 'denied') {
+            console.log('Permisos denegados por el usuario');
+            this.notificationsEnabled = false;
+            localStorage.setItem('notificationsEnabled', 'false');
+            return false;
+        }
+        
+        try {
+            // Solicitar permisos
+            console.log('Solicitando permisos al usuario...');
+            const permission = await Notification.requestPermission();
+            console.log('Respuesta del usuario:', permission);
+            
+            this.notificationsEnabled = permission === 'granted';
+            localStorage.setItem('notificationsEnabled', this.notificationsEnabled ? 'true' : 'false');
+            
+            return this.notificationsEnabled;
+        } catch (error) {
+            console.error('Error al solicitar permisos:', error);
+            this.notificationsEnabled = false;
+            localStorage.setItem('notificationsEnabled', 'false');
+            return false;
+        }
     }
 
     showNotification(title, message) {
@@ -2149,44 +2191,148 @@ const notificationScheduler = new NotificationScheduler();
 
 // Función para habilitar notificaciones
 async function enableNotifications() {
-    const enabled = await notificationScheduler.requestPermission();
-    if (enabled) {
-        notificationScheduler.start();
-        localStorage.setItem('notificationsEnabled', 'true');
-        showAlert('Notificaciones habilitadas correctamente. Recibirás recordatorios para medir tu glucosa.', 'success');
+    console.log('Intentando habilitar notificaciones...');
+    
+    try {
+        const enabled = await notificationScheduler.requestPermission();
+        console.log('Resultado de solicitud de permisos:', enabled);
+        
+        if (enabled) {
+            console.log('Iniciando programador de notificaciones...');
+            notificationScheduler.start();
+            showAlert('Notificaciones habilitadas correctamente. Recibirás recordatorios para medir tu glucosa.', 'success');
+        } else {
+            console.log('Permisos denegados o no disponibles');
+            if (Notification.permission === 'denied') {
+                showAlert('Permisos de notificación denegados. Para habilitarlos:\n\n1. Ve a la configuración del navegador\n2. Busca "Notificaciones" o "Permisos"\n3. Permite notificaciones para este sitio', 'warning');
+            } else {
+                showAlert('No se pudieron habilitar las notificaciones. Verifica que tu navegador las soporte.', 'warning');
+            }
+        }
+        
         updateNotificationStatus();
-    } else {
-        showAlert('Permisos de notificación denegados. Puedes habilitarlos desde la configuración del navegador.', 'warning');
+    } catch (error) {
+        console.error('Error al habilitar notificaciones:', error);
+        showAlert('Error al habilitar notificaciones. Intenta de nuevo.', 'warning');
+        updateNotificationStatus();
     }
 }
 
 // Función para deshabilitar notificaciones
 function disableNotifications() {
+    console.log('Deshabilitando notificaciones...');
     notificationScheduler.stop();
     localStorage.setItem('notificationsEnabled', 'false');
     showAlert('Notificaciones deshabilitadas.', 'success');
     updateNotificationStatus();
 }
 
+// Función para probar notificaciones (útil para depuración)
+function testNotification() {
+    console.log('Probando notificación...');
+    
+    if (!('Notification' in window)) {
+        showAlert('Tu navegador no soporta notificaciones.', 'warning');
+        return;
+    }
+    
+    if (Notification.permission !== 'granted') {
+        showAlert('Primero debes habilitar las notificaciones.', 'warning');
+        return;
+    }
+    
+    try {
+        const notification = new Notification('Prueba de Notificación', {
+            body: '¡Las notificaciones están funcionando correctamente! 🎉',
+            icon: '🩺',
+            badge: '🩺',
+            tag: 'test-notification',
+            requireInteraction: false
+        });
+        
+        notification.onclick = function() {
+            window.focus();
+            notification.close();
+        };
+        
+        // Auto-cerrar después de 5 segundos
+        setTimeout(() => {
+            notification.close();
+        }, 5000);
+        
+        showAlert('Notificación de prueba enviada. Verifica si la recibiste.', 'success');
+        console.log('Notificación de prueba enviada exitosamente');
+    } catch (error) {
+        console.error('Error al enviar notificación de prueba:', error);
+        showAlert('Error al enviar notificación de prueba: ' + error.message, 'warning');
+    }
+}
+
 // Función para actualizar el estado de las notificaciones en la UI
 function updateNotificationStatus() {
-    // Verificar permisos del navegador y estado guardado
-    const hasPermission = 'Notification' in window && Notification.permission === 'granted';
+    console.log('Actualizando estado de notificaciones...');
+    
+    // Verificar soporte del navegador
+    const browserSupport = 'Notification' in window;
+    console.log('Soporte del navegador:', browserSupport);
+    
+    // Verificar permisos del navegador
+    const hasPermission = browserSupport && Notification.permission === 'granted';
+    console.log('Permisos concedidos:', hasPermission);
+    console.log('Estado de permisos:', browserSupport ? Notification.permission : 'No soportado');
+    
+    // Verificar estado guardado
     const savedEnabled = localStorage.getItem('notificationsEnabled') === 'true';
-    const isActive = hasPermission && savedEnabled && notificationScheduler.checkInterval !== null;
+    console.log('Estado guardado:', savedEnabled);
+    
+    // Verificar si el programador está activo
+    const isRunning = notificationScheduler.checkInterval !== null;
+    console.log('Programador activo:', isRunning);
+    
+    // Estado final
+    const isActive = hasPermission && savedEnabled && isRunning;
+    console.log('Estado final activo:', isActive);
     
     const statusElement = document.getElementById('notificationStatus');
     if (statusElement) {
+        let statusText = '🔕 Inactivas';
+        let statusClass = 'text-gray-600';
+        let buttonText = 'Activar';
+        let buttonClass = 'bg-green-100 text-green-600 hover:bg-green-200';
+        let buttonAction = 'enableNotifications()';
+        
+        if (!browserSupport) {
+            statusText = '❌ No soportadas';
+            statusClass = 'text-red-600';
+            buttonText = 'No disponible';
+            buttonClass = 'bg-gray-100 text-gray-500 cursor-not-allowed';
+            buttonAction = '';
+        } else if (Notification.permission === 'denied') {
+            statusText = '🚫 Bloqueadas';
+            statusClass = 'text-red-600';
+            buttonText = 'Bloqueadas';
+            buttonClass = 'bg-red-100 text-red-600 cursor-not-allowed';
+            buttonAction = '';
+        } else if (isActive) {
+            statusText = '🔔 Activas';
+            statusClass = 'text-green-600';
+            buttonText = 'Desactivar';
+            buttonClass = 'bg-red-100 text-red-600 hover:bg-red-200';
+            buttonAction = 'disableNotifications()';
+        }
+        
         statusElement.innerHTML = `
             <div class="flex items-center justify-between">
-                <span class="text-sm ${isActive ? 'text-green-600' : 'text-gray-600'}">
-                    ${isActive ? '🔔 Activas' : '🔕 Inactivas'}
+                <span class="text-sm ${statusClass}">
+                    ${statusText}
                 </span>
-                <button onclick="${isActive ? 'disableNotifications()' : 'enableNotifications()'}" 
-                        class="px-2 py-1 text-xs rounded ${isActive ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-green-100 text-green-600 hover:bg-green-200'}">
-                    ${isActive ? 'Desactivar' : 'Activar'}
+                <button ${buttonAction ? `onclick="${buttonAction}"` : 'disabled'} 
+                        class="px-2 py-1 text-xs rounded ${buttonClass}">
+                    ${buttonText}
                 </button>
             </div>
+            ${!browserSupport ? '<div class="text-xs text-gray-500 mt-1">Tu navegador no soporta notificaciones</div>' : ''}
+            ${Notification.permission === 'denied' ? '<div class="text-xs text-red-500 mt-1">Permisos denegados en configuración del navegador</div>' : ''}
         `;
     }
 }
