@@ -110,7 +110,11 @@
                            class="px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-400 text-sm" 
                            value="">
                 </div>
-                <p class="text-xs text-gray-500 mt-1">💡 Seleccione la fecha y hora del registro para datos anteriores</p>
+                <div class="mt-2 flex items-center gap-2">
+                    <input type="checkbox" id="enableEditMode" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="enableEditMode" class="text-xs text-blue-700 font-medium cursor-pointer">🔓 Permitir edición de datos existentes</label>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">💡 Seleccione una fecha pasada para ver/editar datos históricos</p>
             </div>
             
             <form id="glucoseForm" class="space-y-3">
@@ -357,7 +361,7 @@
                                 <ul class="space-y-1">
                                     <li>• 07:30 - Antes del desayuno</li>
                                     <li>• 09:00 - Después del desayuno</li>
-                                    <li>• 12:30 - Antes del almuerzo</li>
+                                    <li>• 12:40 - Antes del almuerzo</li>
                                     <li>• 14:00 - Después del almuerzo</li>
                                     <li>• 18:30 - Antes de la cena</li>
                                     <li>• 20:00 - Después de la cena</li>

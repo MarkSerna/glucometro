@@ -455,6 +455,7 @@ function initializeDateSelector() {
     const dateInput = document.getElementById('recordDate');
     const timeInput = document.getElementById('recordTime');
     const todayBtn = document.getElementById('todayBtn');
+    const editCheckbox = document.getElementById('enableEditMode');
     
     // Establecer fecha y hora actual por defecto
     const now = new Date();
@@ -478,8 +479,11 @@ function initializeDateSelector() {
         dateInput.value = current.toISOString().split('T')[0];
         timeInput.value = current.toTimeString().slice(0, 5);
         
-        // Cargar datos para hoy
-        loadDataForSelectedDate();
+        // Limpiar campos y habilitar edición para fecha actual
+        clearFormFields();
+        enableAllFields();
+        
+        showAlert('Fecha establecida a hoy. Puede ingresar nuevos datos.', 'info');
         
         // Mostrar confirmación visual
         const originalText = todayBtn.innerHTML;
@@ -493,12 +497,34 @@ function initializeDateSelector() {
             todayBtn.classList.add('bg-blue-500');
         }, 1500);
     });
+    
+    // Manejar casilla de edición
+    if (editCheckbox) {
+        editCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                enableAllFields();
+                showAlert('Modo de edición activado. Puede modificar los datos.', 'success');
+            } else {
+                // Solo deshabilitar si hay datos cargados y no es fecha actual
+                const selectedDate = new Date(dateInput.value).toLocaleDateString('es-ES');
+                const today = new Date().toLocaleDateString('es-ES');
+                
+                if (selectedDate !== today) {
+                    disableAllFields();
+                    showAlert('Modo de edición desactivado.', 'info');
+                }
+            }
+        });
+    }
 }
 
 // Cargar datos existentes para la fecha seleccionada
 function loadDataForSelectedDate() {
     const dateInput = document.getElementById('recordDate');
-    if (!dateInput.value) return;
+    if (!dateInput.value) {
+        enableAllFields();
+        return;
+    }
     
     const selectedDate = new Date(dateInput.value).toLocaleDateString('es-ES');
     const history = getHistory();
@@ -510,6 +536,7 @@ function loadDataForSelectedDate() {
     clearFormFields();
     
     if (recordsForDate.length === 0) {
+        enableAllFields();
         showAlert(`No se encontraron registros para ${selectedDate}`, 'info');
         return;
     }
@@ -520,10 +547,13 @@ function loadDataForSelectedDate() {
     if (completeRecord) {
         // Cargar datos del registro completo
         loadCompleteRecord(completeRecord);
-        showAlert(`Datos cargados para ${selectedDate} (registro completo)`, 'success');
+        disableAllFields();
+        showAlert(`Datos cargados para ${selectedDate}. Use la casilla de edición para modificar.`, 'success');
     } else {
         // Cargar registros individuales de comidas
         loadMealRecords(recordsForDate, selectedDate);
+        disableAllFields();
+        showAlert(`Datos parciales cargados para ${selectedDate}. Use la casilla de edición para modificar.`, 'info');
     }
 }
 
@@ -538,6 +568,80 @@ function clearFormFields() {
     document.getElementById('beforeDinner').value = '';
     document.getElementById('afterDinner').value = '';
     document.getElementById('insulinDinner').value = '';
+}
+
+// Deshabilitar todos los campos del formulario
+function disableAllFields() {
+    const fields = [
+        'beforeBreakfast', 'afterBreakfast', 'insulinBreakfast',
+        'beforeLunch', 'afterLunch', 'insulinLunch',
+        'beforeDinner', 'afterDinner', 'insulinDinner'
+    ];
+    
+    fields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.disabled = true;
+            field.classList.add('bg-gray-100', 'cursor-not-allowed');
+        }
+    });
+    
+    // Deshabilitar botones de guardar comidas
+    const mealButtons = ['saveBreakfastBtn', 'saveLunchBtn', 'saveDinnerBtn'];
+    mealButtons.forEach(btnId => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    });
+    
+    // Deshabilitar botón de envío del formulario
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+}
+
+// Habilitar todos los campos del formulario
+function enableAllFields() {
+    const fields = [
+        'beforeBreakfast', 'afterBreakfast', 'insulinBreakfast',
+        'beforeLunch', 'afterLunch', 'insulinLunch',
+        'beforeDinner', 'afterDinner', 'insulinDinner'
+    ];
+    
+    fields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.disabled = false;
+            field.classList.remove('bg-gray-100', 'cursor-not-allowed');
+        }
+    });
+    
+    // Habilitar botones de guardar comidas
+    const mealButtons = ['saveBreakfastBtn', 'saveLunchBtn', 'saveDinnerBtn'];
+    mealButtons.forEach(btnId => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    });
+    
+    // Habilitar botón de envío del formulario
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+    
+    // Desmarcar la casilla de edición
+    const editCheckbox = document.getElementById('enableEditMode');
+    if (editCheckbox) {
+        editCheckbox.checked = false;
+    }
 }
 
 // Cargar registro completo
@@ -1284,22 +1388,6 @@ function displayHistoryList(history) {
         });
         
         const measurements = record.measurements;
-        const stats = record.statistics;
-        
-        // Asegurar que badPercentage esté definido
-        const badPercentage = stats && typeof stats.badPercentage === 'number' ? stats.badPercentage : 0;
-        
-        // Calcular promedio de glucosa para este registro
-        const glucoseReadings = [];
-        if (measurements.beforeBreakfast) glucoseReadings.push(measurements.beforeBreakfast);
-        if (measurements.afterBreakfast) glucoseReadings.push(measurements.afterBreakfast);
-        if (measurements.beforeLunch) glucoseReadings.push(measurements.beforeLunch);
-        if (measurements.afterLunch) glucoseReadings.push(measurements.afterLunch);
-        if (measurements.beforeDinner) glucoseReadings.push(measurements.beforeDinner);
-        if (measurements.afterDinner) glucoseReadings.push(measurements.afterDinner);
-        
-        const avgGlucose = glucoseReadings.length > 0 ? 
-            (glucoseReadings.reduce((sum, val) => sum + val, 0) / glucoseReadings.length).toFixed(1) : 'N/A';
         
         // Calcular total de insulina
         const totalInsulin = (measurements.insulinBreakfast || 0) + 
@@ -1311,7 +1399,7 @@ function displayHistoryList(history) {
                           record.mealType ? getMealName(record.mealType) : 'Parcial';
         
         return `
-            <div class="bg-white border border-gray-200 rounded-lg p-4 mb-3 hover:shadow-md transition-all duration-200 hover:border-blue-300">
+            <div class="bg-white border border-gray-200 rounded-lg p-3 mb-3 hover:shadow-md transition-all duration-200 hover:border-blue-300">
                 <!-- Header del registro -->
                 <div class="flex justify-between items-start mb-3">
                     <div class="flex-1">
@@ -1328,128 +1416,100 @@ function displayHistoryList(history) {
                         </p>
                     </div>
                     <div class="flex items-center gap-2">
-                        <div class="text-right">
-                            <div class="text-xs text-gray-500">Estado</div>
-                            <span class="px-2 py-1 text-xs font-bold rounded-full ${
-                                badPercentage <= 20 ? 'bg-green-100 text-green-700' :
-                                badPercentage <= 40 ? 'bg-yellow-100 text-yellow-700' :
-                                'bg-red-100 text-red-700'
-                            }">
-                                ${badPercentage <= 20 ? '✅ Excelente' : badPercentage <= 40 ? '⚠️ Regular' : '🚨 Atención'}
-                            </span>
-                        </div>
+                        ${totalInsulin > 0 ? `
+                            <div class="text-right">
+                                <div class="text-xs text-gray-500">Insulina Total</div>
+                                <span class="px-2 py-1 text-xs font-bold rounded-full bg-purple-100 text-purple-700">
+                                    ${totalInsulin}u
+                                </span>
+                            </div>
+                        ` : ''}
                         <button data-index="${index}" class="delete-record-btn p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors duration-200" title="Eliminar registro">
                             🗑️
                         </button>
                     </div>
                 </div>
                 
-                <!-- Estadísticas rápidas -->
-                <div class="grid grid-cols-3 gap-2 mb-3 text-xs">
-                    <div class="bg-blue-50 p-2 rounded-lg text-center border border-blue-200">
-                        <div class="font-bold text-blue-700">${avgGlucose}</div>
-                        <div class="text-blue-600">Promedio</div>
-                    </div>
-                    <div class="bg-purple-50 p-2 rounded-lg text-center border border-purple-200">
-                        <div class="font-bold text-purple-700">${totalInsulin}</div>
-                        <div class="text-purple-600">Insulina</div>
-                    </div>
-                    <div class="bg-gray-50 p-2 rounded-lg text-center border border-gray-200">
-                        <div class="font-bold text-gray-700">${glucoseReadings.length}</div>
-                        <div class="text-gray-600">Mediciones</div>
-                    </div>
-                </div>
-                
                 <!-- Mediciones por comida -->
                 <div class="grid grid-cols-1 gap-2 text-xs">
                     ${measurements.beforeBreakfast || measurements.afterBreakfast || measurements.insulinBreakfast ? `
-                        <div class="bg-gradient-to-r from-orange-50 to-orange-100 p-3 rounded-lg border border-orange-200">
+                        <div class="bg-gradient-to-r from-orange-50 to-orange-100 p-2 rounded-lg border border-orange-200">
                             <div class="flex items-center justify-between mb-2">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-lg">🌅</span>
-                                    <span class="font-semibold text-orange-800">Desayuno</span>
+                                    <span class="text-sm">🌅</span>
+                                    <span class="font-semibold text-orange-800 text-sm">Desayuno</span>
                                 </div>
-                                ${measurements.insulinBreakfast ? `<span class="bg-orange-200 text-orange-800 px-2 py-1 rounded-full font-medium">${measurements.insulinBreakfast}u</span>` : ''}
+                                ${measurements.insulinBreakfast ? `<span class="bg-orange-200 text-orange-800 px-2 py-1 rounded-full font-medium text-xs">${measurements.insulinBreakfast}u</span>` : ''}
                             </div>
                             <div class="grid grid-cols-2 gap-2">
                                 ${measurements.beforeBreakfast ? `
-                                    <div class="bg-white p-2 rounded border">
-                                        <div class="text-orange-600 font-medium">Antes</div>
-                                        <div class="text-lg font-bold text-orange-800">${measurements.beforeBreakfast} <span class="text-xs font-normal">mg/dL</span></div>
+                                    <div class="bg-white p-2 rounded border text-center">
+                                        <div class="text-orange-600 font-medium text-xs">Antes</div>
+                                        <div class="text-sm font-bold ${measurements.beforeBreakfast > targetRanges.beforeMeal ? 'text-red-600' : 'text-orange-800'}">${measurements.beforeBreakfast} mg/dL</div>
                                     </div>
-                                ` : '<div class="bg-gray-100 p-2 rounded border text-center text-gray-400">Sin datos</div>'}
+                                ` : ''}
                                 ${measurements.afterBreakfast ? `
-                                    <div class="bg-white p-2 rounded border">
-                                        <div class="text-orange-600 font-medium">Después</div>
-                                        <div class="text-lg font-bold text-orange-800">${measurements.afterBreakfast} <span class="text-xs font-normal">mg/dL</span></div>
+                                    <div class="bg-white p-2 rounded border text-center">
+                                        <div class="text-orange-600 font-medium text-xs">Después</div>
+                                        <div class="text-sm font-bold ${measurements.afterBreakfast > targetRanges.afterMeal ? 'text-red-600' : 'text-orange-800'}">${measurements.afterBreakfast} mg/dL</div>
                                     </div>
-                                ` : '<div class="bg-gray-100 p-2 rounded border text-center text-gray-400">Sin datos</div>'}
+                                ` : ''}
                             </div>
                         </div>
                     ` : ''}
                     
                     ${measurements.beforeLunch || measurements.afterLunch || measurements.insulinLunch ? `
-                        <div class="bg-gradient-to-r from-yellow-50 to-yellow-100 p-3 rounded-lg border border-yellow-200">
+                        <div class="bg-gradient-to-r from-yellow-50 to-yellow-100 p-2 rounded-lg border border-yellow-200">
                             <div class="flex items-center justify-between mb-2">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-lg">☀️</span>
-                                    <span class="font-semibold text-yellow-800">Almuerzo</span>
+                                    <span class="text-sm">☀️</span>
+                                    <span class="font-semibold text-yellow-800 text-sm">Almuerzo</span>
                                 </div>
-                                ${measurements.insulinLunch ? `<span class="bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full font-medium">${measurements.insulinLunch}u</span>` : ''}
+                                ${measurements.insulinLunch ? `<span class="bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full font-medium text-xs">${measurements.insulinLunch}u</span>` : ''}
                             </div>
                             <div class="grid grid-cols-2 gap-2">
                                 ${measurements.beforeLunch ? `
-                                    <div class="bg-white p-2 rounded border">
-                                        <div class="text-yellow-600 font-medium">Antes</div>
-                                        <div class="text-lg font-bold text-yellow-800">${measurements.beforeLunch} <span class="text-xs font-normal">mg/dL</span></div>
+                                    <div class="bg-white p-2 rounded border text-center">
+                                        <div class="text-yellow-600 font-medium text-xs">Antes</div>
+                                        <div class="text-sm font-bold ${measurements.beforeLunch > targetRanges.beforeMeal ? 'text-red-600' : 'text-yellow-800'}">${measurements.beforeLunch} mg/dL</div>
                                     </div>
-                                ` : '<div class="bg-gray-100 p-2 rounded border text-center text-gray-400">Sin datos</div>'}
+                                ` : ''}
                                 ${measurements.afterLunch ? `
-                                    <div class="bg-white p-2 rounded border">
-                                        <div class="text-yellow-600 font-medium">Después</div>
-                                        <div class="text-lg font-bold text-yellow-800">${measurements.afterLunch} <span class="text-xs font-normal">mg/dL</span></div>
+                                    <div class="bg-white p-2 rounded border text-center">
+                                        <div class="text-yellow-600 font-medium text-xs">Después</div>
+                                        <div class="text-sm font-bold ${measurements.afterLunch > targetRanges.afterMeal ? 'text-red-600' : 'text-yellow-800'}">${measurements.afterLunch} mg/dL</div>
                                     </div>
-                                ` : '<div class="bg-gray-100 p-2 rounded border text-center text-gray-400">Sin datos</div>'}
+                                ` : ''}
                             </div>
                         </div>
                     ` : ''}
                     
                     ${measurements.beforeDinner || measurements.afterDinner || measurements.insulinDinner ? `
-                        <div class="bg-gradient-to-r from-purple-50 to-purple-100 p-3 rounded-lg border border-purple-200">
+                        <div class="bg-gradient-to-r from-purple-50 to-purple-100 p-2 rounded-lg border border-purple-200">
                             <div class="flex items-center justify-between mb-2">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-lg">🌙</span>
-                                    <span class="font-semibold text-purple-800">Cena</span>
+                                    <span class="text-sm">🌙</span>
+                                    <span class="font-semibold text-purple-800 text-sm">Cena</span>
                                 </div>
-                                ${measurements.insulinDinner ? `<span class="bg-purple-200 text-purple-800 px-2 py-1 rounded-full font-medium">${measurements.insulinDinner}u</span>` : ''}
+                                ${measurements.insulinDinner ? `<span class="bg-purple-200 text-purple-800 px-2 py-1 rounded-full font-medium text-xs">${measurements.insulinDinner}u</span>` : ''}
                             </div>
                             <div class="grid grid-cols-2 gap-2">
                                 ${measurements.beforeDinner ? `
-                                    <div class="bg-white p-2 rounded border">
-                                        <div class="text-purple-600 font-medium">Antes</div>
-                                        <div class="text-lg font-bold text-purple-800">${measurements.beforeDinner} <span class="text-xs font-normal">mg/dL</span></div>
+                                    <div class="bg-white p-2 rounded border text-center">
+                                        <div class="text-purple-600 font-medium text-xs">Antes</div>
+                                        <div class="text-sm font-bold ${measurements.beforeDinner > targetRanges.beforeMeal ? 'text-red-600' : 'text-purple-800'}">${measurements.beforeDinner} mg/dL</div>
                                     </div>
-                                ` : '<div class="bg-gray-100 p-2 rounded border text-center text-gray-400">Sin datos</div>'}
+                                ` : ''}
                                 ${measurements.afterDinner ? `
-                                    <div class="bg-white p-2 rounded border">
-                                        <div class="text-purple-600 font-medium">Después</div>
-                                        <div class="text-lg font-bold text-purple-800">${measurements.afterDinner} <span class="text-xs font-normal">mg/dL</span></div>
+                                    <div class="bg-white p-2 rounded border text-center">
+                                        <div class="text-purple-600 font-medium text-xs">Después</div>
+                                        <div class="text-sm font-bold ${measurements.afterDinner > targetRanges.afterMeal ? 'text-red-600' : 'text-purple-800'}">${measurements.afterDinner} mg/dL</div>
                                     </div>
-                                ` : '<div class="bg-gray-100 p-2 rounded border text-center text-gray-400">Sin datos</div>'}
+                                ` : ''}
                             </div>
                         </div>
                     ` : ''}
                 </div>
-                
-                <!-- Indicadores de alerta si existen -->
-                ${record.alertsCount > 0 ? `
-                    <div class="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg">
-                        <div class="flex items-center gap-2 text-red-700">
-                            <span>⚠️</span>
-                            <span class="text-xs font-medium">${record.alertsCount} alerta${record.alertsCount > 1 ? 's' : ''} detectada${record.alertsCount > 1 ? 's' : ''}</span>
-                        </div>
-                    </div>
-                ` : ''}
             </div>
         `;
     }).join('');
@@ -1543,7 +1603,7 @@ class NotificationScheduler {
         this.scheduledTimes = [
             { time: '07:30', message: '🌅 ¡Hora de medir tu glucosa antes del desayuno!' },
             { time: '09:00', message: '🍳 ¿Ya mediste tu glucosa después del desayuno?' },
-            { time: '12:30', message: '☀️ ¡Hora de medir tu glucosa antes del almuerzo!' },
+            { time: '12:43', message: '☀️ ¡Hora de medir tu glucosa antes del almuerzo!' },
             { time: '14:00', message: '🍽️ ¿Ya mediste tu glucosa después del almuerzo?' },
             { time: '18:30', message: '🌙 ¡Hora de medir tu glucosa antes de la cena!' },
             { time: '20:00', message: '🍽️ ¿Ya mediste tu glucosa después de la cena?' }
