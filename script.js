@@ -848,8 +848,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Configurar estado inicial de notificaciones
     updateNotificationStatus();
     
-    // Auto-iniciar notificaciones si ya están habilitadas
-    if (localStorage.getItem('notificationsEnabled') === 'true') {
+    // Auto-iniciar notificaciones si ya están habilitadas y tenemos permisos
+    if (localStorage.getItem('notificationsEnabled') === 'true' && 
+        'Notification' in window && Notification.permission === 'granted') {
         notificationScheduler.notificationsEnabled = true;
         notificationScheduler.start();
         updateNotificationStatus();
@@ -1891,7 +1892,8 @@ class NotificationScheduler {
             { time: '18:30', message: '🌙 ¡Hora de medir tu glucosa antes de la cena!' },
             { time: '20:00', message: '🍽️ ¿Ya mediste tu glucosa después de la cena?' }
         ];
-        this.notificationsEnabled = false;
+        // Cargar estado desde localStorage
+        this.notificationsEnabled = localStorage.getItem('notificationsEnabled') === 'true';
         this.checkInterval = null;
         this.lastNotificationDate = {};
         this.missingDataInterval = null;
@@ -1900,6 +1902,13 @@ class NotificationScheduler {
 
     async requestPermission() {
         if ('Notification' in window) {
+            // Verificar si ya tenemos permisos
+            if (Notification.permission === 'granted') {
+                this.notificationsEnabled = true;
+                return true;
+            }
+            
+            // Si no tenemos permisos, solicitarlos
             const permission = await Notification.requestPermission();
             this.notificationsEnabled = permission === 'granted';
             return this.notificationsEnabled;
@@ -2161,17 +2170,21 @@ function disableNotifications() {
 
 // Función para actualizar el estado de las notificaciones en la UI
 function updateNotificationStatus() {
-    const status = notificationScheduler.getStatus();
+    // Verificar permisos del navegador y estado guardado
+    const hasPermission = 'Notification' in window && Notification.permission === 'granted';
+    const savedEnabled = localStorage.getItem('notificationsEnabled') === 'true';
+    const isActive = hasPermission && savedEnabled && notificationScheduler.checkInterval !== null;
+    
     const statusElement = document.getElementById('notificationStatus');
     if (statusElement) {
         statusElement.innerHTML = `
             <div class="flex items-center justify-between">
-                <span class="text-sm ${status.enabled && status.running ? 'text-green-600' : 'text-gray-600'}">
-                    ${status.enabled && status.running ? '🔔 Activas' : '🔕 Inactivas'}
+                <span class="text-sm ${isActive ? 'text-green-600' : 'text-gray-600'}">
+                    ${isActive ? '🔔 Activas' : '🔕 Inactivas'}
                 </span>
-                <button onclick="${status.enabled && status.running ? 'disableNotifications()' : 'enableNotifications()'}" 
-                        class="px-2 py-1 text-xs rounded ${status.enabled && status.running ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-green-100 text-green-600 hover:bg-green-200'}">
-                    ${status.enabled && status.running ? 'Desactivar' : 'Activar'}
+                <button onclick="${isActive ? 'disableNotifications()' : 'enableNotifications()'}" 
+                        class="px-2 py-1 text-xs rounded ${isActive ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-green-100 text-green-600 hover:bg-green-200'}">
+                    ${isActive ? 'Desactivar' : 'Activar'}
                 </button>
             </div>
         `;
