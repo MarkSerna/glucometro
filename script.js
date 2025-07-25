@@ -53,7 +53,7 @@ tabButtons.forEach(button => {
 // Configuración de rangos objetivo
 let targetRanges = {
     beforeMeal: 95,
-    afterMeal: 145
+    afterMeal: 140
 };
 
 // Cargar rangos guardados al iniciar
