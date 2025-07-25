@@ -1536,17 +1536,20 @@ function displayHistorySummary(history) {
         return sum + count;
     }, 0);
     
-    const allReadings = [];
+    const beforeMealReadings = [];
+    const afterMealReadings = [];
     let totalInsulin = 0;
     let alertsCount = 0;
     
     history.forEach(record => {
-        if (record.measurements.beforeBreakfast) allReadings.push(record.measurements.beforeBreakfast);
-        if (record.measurements.afterBreakfast) allReadings.push(record.measurements.afterBreakfast);
-        if (record.measurements.beforeLunch) allReadings.push(record.measurements.beforeLunch);
-        if (record.measurements.afterLunch) allReadings.push(record.measurements.afterLunch);
-        if (record.measurements.beforeDinner) allReadings.push(record.measurements.beforeDinner);
-        if (record.measurements.afterDinner) allReadings.push(record.measurements.afterDinner);
+        // Separar lecturas antes y después de comidas
+        if (record.measurements.beforeBreakfast) beforeMealReadings.push(record.measurements.beforeBreakfast);
+        if (record.measurements.beforeLunch) beforeMealReadings.push(record.measurements.beforeLunch);
+        if (record.measurements.beforeDinner) beforeMealReadings.push(record.measurements.beforeDinner);
+        
+        if (record.measurements.afterBreakfast) afterMealReadings.push(record.measurements.afterBreakfast);
+        if (record.measurements.afterLunch) afterMealReadings.push(record.measurements.afterLunch);
+        if (record.measurements.afterDinner) afterMealReadings.push(record.measurements.afterDinner);
         
         // Sumar insulina total
         totalInsulin += (record.measurements.insulinBreakfast || 0);
@@ -1557,20 +1560,21 @@ function displayHistorySummary(history) {
         alertsCount += (record.alertsCount || 0);
     });
     
-    const averageGlucose = allReadings.length > 0 ? 
-        (allReadings.reduce((sum, reading) => sum + reading, 0) / allReadings.length).toFixed(1) : 0;
+    // Calcular promedios separados
+    const averageBeforeMeals = beforeMealReadings.length > 0 ? 
+        (beforeMealReadings.reduce((sum, reading) => sum + reading, 0) / beforeMealReadings.length).toFixed(1) : 0;
+    
+    const averageAfterMeals = afterMealReadings.length > 0 ? 
+        (afterMealReadings.reduce((sum, reading) => sum + reading, 0) / afterMealReadings.length).toFixed(1) : 0;
     
     // Calcular lecturas malas usando los rangos configurables
-    const badReadings = allReadings.filter((reading, index) => {
-        // Determinar si es antes o después de comida basado en el patrón
-        // beforeBreakfast, afterBreakfast, beforeLunch, afterLunch, beforeDinner, afterDinner
-        const isBeforeMeal = index % 2 === 0;
-        const limit = isBeforeMeal ? targetRanges.beforeMeal : targetRanges.afterMeal;
-        return reading > limit;
-    }).length;
+    const badBeforeMealReadings = beforeMealReadings.filter(reading => reading > targetRanges.beforeMeal).length;
+    const badAfterMealReadings = afterMealReadings.filter(reading => reading > targetRanges.afterMeal).length;
+    const totalBadReadings = badBeforeMealReadings + badAfterMealReadings;
+    const totalReadingsCount = beforeMealReadings.length + afterMealReadings.length;
     
-    const averageBadPercentage = allReadings.length > 0 ? 
-        ((badReadings / allReadings.length) * 100).toFixed(1) : '0';
+    const averageBadPercentage = totalReadingsCount > 0 ? 
+        ((totalBadReadings / totalReadingsCount) * 100).toFixed(1) : '0';
     
     // Calcular rango de fechas
     const dates = history.map(record => new Date(record.timestamp)).sort((a, b) => a - b);
@@ -1591,33 +1595,8 @@ function displayHistorySummary(history) {
             </div>
         </div>
         
-        <!-- Estadísticas principales -->
-        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg border border-blue-200 text-center hover:shadow-md transition-shadow duration-200">
-            <div class="text-xl font-bold text-blue-800">${uniqueDays}</div>
-            <div class="text-xs text-blue-600 font-medium">Días registrados</div>
-            <div class="text-xs text-blue-500 mt-1">${totalRecords} entradas</div>
-        </div>
-        
-        <div class="bg-gradient-to-br from-green-50 to-green-100 p-3 rounded-lg border border-green-200 text-center hover:shadow-md transition-shadow duration-200">
-            <div class="text-xl font-bold text-green-800">${totalReadings}</div>
-            <div class="text-xs text-green-600 font-medium">Mediciones</div>
-            <div class="text-xs text-green-500 mt-1">${(totalReadings / uniqueDays).toFixed(1)} por día</div>
-        </div>
-        
-        <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-3 rounded-lg border border-purple-200 text-center hover:shadow-md transition-shadow duration-200">
-            <div class="text-xl font-bold text-purple-800">${averageGlucose}</div>
-            <div class="text-xs text-purple-600 font-medium">Promedio glucosa</div>
-            <div class="text-xs text-purple-500 mt-1">mg/dL</div>
-        </div>
-        
-        <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-3 rounded-lg border border-orange-200 text-center hover:shadow-md transition-shadow duration-200">
-            <div class="text-xl font-bold text-orange-800">${totalInsulin}</div>
-            <div class="text-xs text-orange-600 font-medium">Insulina total</div>
-            <div class="text-xs text-orange-500 mt-1">unidades</div>
-        </div>
-        
-        <!-- Indicadores de salud -->
-        <div class="col-span-2 grid grid-cols-2 gap-2 mt-2">
+        <!-- Indicadores de salud (primero) -->
+        <div class="col-span-2 grid grid-cols-2 gap-2 mb-3">
             <div class="bg-gradient-to-br ${averageBadPercentage <= 20 ? 'from-green-50 to-green-100 border-green-200' : averageBadPercentage <= 40 ? 'from-yellow-50 to-yellow-100 border-yellow-200' : 'from-red-50 to-red-100 border-red-200'} p-3 rounded-lg border text-center hover:shadow-md transition-shadow duration-200">
                 <div class="text-lg font-bold ${averageBadPercentage <= 20 ? 'text-green-800' : averageBadPercentage <= 40 ? 'text-yellow-800' : 'text-red-800'}">
                     ${averageBadPercentage <= 20 ? '✅' : averageBadPercentage <= 40 ? '⚠️' : '🚨'} ${averageBadPercentage}%
@@ -1637,6 +1616,31 @@ function displayHistorySummary(history) {
                     ${alertsCount === 0 ? 'Sin problemas' : alertsCount <= 5 ? 'Pocas alertas' : 'Muchas alertas'}
                 </div>
             </div>
+        </div>
+        
+        <!-- Estadísticas principales -->
+        <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-3 rounded-lg border border-purple-200 text-center hover:shadow-md transition-shadow duration-200">
+            <div class="text-xl font-bold text-purple-800">${averageBeforeMeals}</div>
+            <div class="text-xs text-purple-600 font-medium">Promedio antes</div>
+            <div class="text-xs text-purple-500 mt-1">mg/dL</div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-teal-50 to-teal-100 p-3 rounded-lg border border-teal-200 text-center hover:shadow-md transition-shadow duration-200">
+            <div class="text-xl font-bold text-teal-800">${averageAfterMeals}</div>
+            <div class="text-xs text-teal-600 font-medium">Promedio después</div>
+            <div class="text-xs text-teal-500 mt-1">mg/dL</div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-3 rounded-lg border border-orange-200 text-center hover:shadow-md transition-shadow duration-200">
+            <div class="text-xl font-bold text-orange-800">${totalInsulin}</div>
+            <div class="text-xs text-orange-600 font-medium">Insulina total</div>
+            <div class="text-xs text-orange-500 mt-1">unidades</div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg border border-blue-200 text-center hover:shadow-md transition-shadow duration-200">
+            <div class="text-xl font-bold text-blue-800">${uniqueDays}</div>
+            <div class="text-xs text-blue-600 font-medium">Días registrados</div>
+            <div class="text-xs text-blue-500 mt-1">${totalRecords} entradas</div>
         </div>
     `;
 }
