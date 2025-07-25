@@ -1900,10 +1900,29 @@ class NotificationScheduler {
 
     async requestPermission() {
         if ('Notification' in window) {
-            const permission = await Notification.requestPermission();
-            this.notificationsEnabled = permission === 'granted';
-            return this.notificationsEnabled;
+            try {
+                // En algunos navegadores móviles, requestPermission puede no ser una función async
+                let permission;
+                if (typeof Notification.requestPermission === 'function') {
+                    permission = await Notification.requestPermission();
+                } else {
+                    // Fallback para navegadores más antiguos
+                    permission = Notification.permission;
+                }
+                
+                this.notificationsEnabled = permission === 'granted';
+                
+                // Log para debugging en móviles
+                console.log('Notification permission:', permission);
+                
+                return this.notificationsEnabled;
+            } catch (error) {
+                console.error('Error requesting notification permission:', error);
+                this.notificationsEnabled = false;
+                return false;
+            }
         }
+        console.log('Notifications not supported in this browser');
         return false;
     }
 
@@ -2140,14 +2159,42 @@ const notificationScheduler = new NotificationScheduler();
 
 // Función para habilitar notificaciones
 async function enableNotifications() {
-    const enabled = await notificationScheduler.requestPermission();
-    if (enabled) {
-        notificationScheduler.start();
-        localStorage.setItem('notificationsEnabled', 'true');
-        showAlert('Notificaciones habilitadas correctamente. Recibirás recordatorios para medir tu glucosa.', 'success');
-        updateNotificationStatus();
-    } else {
-        showAlert('No se pudieron habilitar las notificaciones. Verifica los permisos del navegador.', 'warning');
+    try {
+        // Verificar si las notificaciones están soportadas
+        if (!('Notification' in window)) {
+            showAlert('Las notificaciones no están soportadas en este navegador.', 'warning');
+            return;
+        }
+        
+        // Verificar si ya están permitidas
+        if (Notification.permission === 'granted') {
+            notificationScheduler.notificationsEnabled = true;
+            notificationScheduler.start();
+            localStorage.setItem('notificationsEnabled', 'true');
+            showAlert('Notificaciones habilitadas correctamente. Recibirás recordatorios para medir tu glucosa.', 'success');
+            updateNotificationStatus();
+            return;
+        }
+        
+        // Verificar si están bloqueadas permanentemente
+        if (Notification.permission === 'denied') {
+            showAlert('Las notificaciones están bloqueadas. Ve a la configuración del navegador para habilitarlas manualmente.', 'warning');
+            return;
+        }
+        
+        // Solicitar permisos
+        const enabled = await notificationScheduler.requestPermission();
+        if (enabled) {
+            notificationScheduler.start();
+            localStorage.setItem('notificationsEnabled', 'true');
+            showAlert('Notificaciones habilitadas correctamente. Recibirás recordatorios para medir tu glucosa.', 'success');
+            updateNotificationStatus();
+        } else {
+            showAlert('Permisos de notificación denegados. Puedes habilitarlos desde la configuración del navegador.', 'warning');
+        }
+    } catch (error) {
+        console.error('Error al habilitar notificaciones:', error);
+        showAlert('Error al configurar las notificaciones. Intenta desde la configuración del navegador.', 'warning');
     }
 }
 
@@ -2157,6 +2204,31 @@ function disableNotifications() {
     localStorage.setItem('notificationsEnabled', 'false');
     showAlert('Notificaciones deshabilitadas.', 'success');
     updateNotificationStatus();
+}
+
+// Función para mostrar instrucciones de notificaciones móviles
+function showMobileNotificationInstructions() {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+        const instructions = `
+            <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs">
+                <p class="font-medium text-blue-800 mb-2">📱 Instrucciones para móvil:</p>
+                <ul class="text-blue-700 space-y-1">
+                    <li>• Toca el botón "Activar" arriba</li>
+                    <li>• Si no funciona, ve a Configuración del navegador</li>
+                    <li>• Busca "Notificaciones" o "Permisos"</li>
+                    <li>• Permite notificaciones para esta página</li>
+                    <li>• Recarga la aplicación</li>
+                </ul>
+            </div>
+        `;
+        
+        const statusElement = document.getElementById('notificationStatus');
+        if (statusElement && !statusElement.querySelector('.bg-blue-50')) {
+            statusElement.insertAdjacentHTML('afterend', instructions);
+        }
+    }
 }
 
 // Función para actualizar el estado de las notificaciones en la UI
@@ -2175,6 +2247,11 @@ function updateNotificationStatus() {
                 </button>
             </div>
         `;
+        
+        // Mostrar instrucciones para móviles si las notificaciones no están activas
+        if (!status.enabled || !status.running) {
+            showMobileNotificationInstructions();
+        }
     } else {
         // Si el elemento no está disponible, intentar de nuevo después de un breve delay
         setTimeout(() => {
