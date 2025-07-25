@@ -43,7 +43,7 @@ tabButtons.forEach(button => {
         
         // Load statistics when stats tab is clicked
         if (tabId === 'statsContent') {
-            const history = JSON.parse(localStorage.getItem('glucoseHistory') || '[]');
+            const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             displayHistorySummary(history);
             displayTrends();
         }
@@ -1342,7 +1342,7 @@ function initializeHistoryFilters() {
 
 // Function to display trends
 function displayTrends() {
-    const history = JSON.parse(localStorage.getItem('glucometro_history') || '[]');
+    const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
     const trendsContainer = document.getElementById('trendsContainer');
     
     if (!trendsContainer) {
@@ -2057,7 +2057,7 @@ class NotificationScheduler {
 
     checkMissingData() {
         const today = new Date();
-        const history = JSON.parse(localStorage.getItem('glucoseHistory') || '[]');
+        const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
         const missingDays = this.findMissingDataDays(history, today);
         
         if (missingDays.length > 0) {
