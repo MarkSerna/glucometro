@@ -1685,7 +1685,7 @@ class NotificationScheduler {
         this.scheduledTimes = [
             { time: '07:30', message: '🌅 ¡Hora de medir tu glucosa antes del desayuno!' },
             { time: '09:00', message: '🍳 ¿Ya mediste tu glucosa después del desayuno?' },
-            { time: '12:43', message: '☀️ ¡Hora de medir tu glucosa antes del almuerzo!' },
+            { time: '12:45', message: '☀️ ¡Hora de medir tu glucosa antes del almuerzo!' },
             { time: '14:00', message: '🍽️ ¿Ya mediste tu glucosa después del almuerzo?' },
             { time: '18:30', message: '🌙 ¡Hora de medir tu glucosa antes de la cena!' },
             { time: '20:00', message: '🍽️ ¿Ya mediste tu glucosa después de la cena?' }
