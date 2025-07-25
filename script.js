@@ -2258,7 +2258,7 @@ function testMobileAlert() {
 }
 
 // Función para probar notificaciones (útil para depuración)
-function testNotification() {
+async function testNotification() {
     console.log('Probando notificación...');
     
     if (!('Notification' in window)) {
@@ -2272,26 +2272,51 @@ function testNotification() {
     }
     
     try {
-        const notification = new Notification('Prueba de Notificación', {
-            body: '¡Las notificaciones están funcionando correctamente! 🎉',
-            icon: '🩺',
-            badge: '🩺',
-            tag: 'test-notification',
-            requireInteraction: false
-        });
-        
-        notification.onclick = function() {
-            window.focus();
-            notification.close();
-        };
-        
-        // Auto-cerrar después de 5 segundos
-        setTimeout(() => {
-            notification.close();
-        }, 5000);
-        
-        showAlert('Notificación de prueba enviada. Verifica si la recibiste.', 'success');
-        console.log('Notificación de prueba enviada exitosamente');
+        // Verificar si hay service worker disponible
+        if ('serviceWorker' in navigator) {
+            const registration = await navigator.serviceWorker.ready;
+            
+            // Usar service worker para mostrar notificación (requerido en móvil)
+            await registration.showNotification('Prueba de Notificación', {
+                body: '¡Las notificaciones están funcionando correctamente! 🎉',
+                icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjE5MiIgaGVpZ2h0PSIxOTIiIHJ4PSIyNCIgZmlsbD0iIzNCODJGNiIvPjx0ZXh0IHg9Ijk2IiB5PSIxMTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4MCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPvCfqbI8L3RleHQ+PC9zdmc+',
+                badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNzIiIGhlaWdodD0iNzIiIHZpZXdCb3g9IjAgMCA3MiA3MiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIzNiIgY3k9IjM2IiByPSIzNiIgZmlsbD0iIzNCODJGNiIvPjx0ZXh0IHg9IjM2IiB5PSI0NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjI0IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+psjwvdGV4dD48L3N2Zz4=',
+                tag: 'test-notification',
+                requireInteraction: false,
+                vibrate: [200, 100, 200],
+                actions: [
+                    {
+                        action: 'open',
+                        title: 'Abrir App'
+                    }
+                ]
+            });
+            
+            showAlert('Notificación de prueba enviada vía Service Worker. Verifica si la recibiste.', 'success');
+            console.log('Notificación de prueba enviada exitosamente vía Service Worker');
+        } else {
+            // Fallback para navegadores sin service worker
+            const notification = new Notification('Prueba de Notificación', {
+                body: '¡Las notificaciones están funcionando correctamente! 🎉',
+                icon: '🩺',
+                badge: '🩺',
+                tag: 'test-notification',
+                requireInteraction: false
+            });
+            
+            notification.onclick = function() {
+                window.focus();
+                notification.close();
+            };
+            
+            // Auto-cerrar después de 5 segundos
+            setTimeout(() => {
+                notification.close();
+            }, 5000);
+            
+            showAlert('Notificación de prueba enviada. Verifica si la recibiste.', 'success');
+            console.log('Notificación de prueba enviada exitosamente');
+        }
     } catch (error) {
         console.error('Error al enviar notificación de prueba:', error);
         showAlert('Error al enviar notificación de prueba: ' + error.message, 'warning');
