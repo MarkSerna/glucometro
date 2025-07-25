@@ -2109,8 +2109,8 @@ class NotificationScheduler {
         const today = new Date(currentDate);
         today.setHours(0, 0, 0, 0);
         
-        // Verificar los últimos 30 días
-        for (let i = 1; i <= 30; i++) {
+        // Verificar solo los últimos 5 días (sin incluir el día actual)
+        for (let i = 1; i <= 5; i++) {
             const checkDate = new Date(today);
             checkDate.setDate(today.getDate() - i);
             
