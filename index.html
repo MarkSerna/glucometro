@@ -69,6 +69,8 @@
         .tab-content.active {
             display: block;
         }
+        
+
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 via-white to-purple-50 min-h-screen">
@@ -128,9 +130,9 @@
                            class="px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-400 text-sm" 
                            value="">
                 </div>
-                <div class="mt-2 flex items-center gap-2">
-                    <input type="checkbox" id="enableEditMode" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                <div class="mt-2 flex items-center justify-between">
                     <label for="enableEditMode" class="text-xs text-blue-700 font-medium cursor-pointer">🔓 Permitir edición de datos existentes</label>
+                    <input type="checkbox" id="enableEditMode" class="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 focus:ring-2">
                 </div>
                 <p class="text-xs text-gray-500 mt-1">💡 Seleccione una fecha pasada para ver/editar datos históricos</p>
             </div>

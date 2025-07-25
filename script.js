@@ -498,9 +498,11 @@ function initializeDateSelector() {
         }, 1500);
     });
     
-    // Manejar casilla de edición
+    // Manejar checkbox de edición
     if (editCheckbox) {
+        // Event listener para el checkbox
         editCheckbox.addEventListener('change', function() {
+            console.log('Checkbox changed:', this.checked); // Debug
             if (this.checked) {
                 enableAllFields();
                 showAlert('Modo de edición activado. Puede modificar los datos.', 'success');
@@ -515,6 +517,10 @@ function initializeDateSelector() {
                 }
             }
         });
+        
+
+    } else {
+        console.error('Checkbox enableEditMode no encontrado'); // Debug
     }
 }
 
@@ -637,11 +643,8 @@ function enableAllFields() {
         submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
     }
     
-    // Desmarcar la casilla de edición
-    const editCheckbox = document.getElementById('enableEditMode');
-    if (editCheckbox) {
-        editCheckbox.checked = false;
-    }
+    // No desmarcar automáticamente el checkbox de edición
+    // El usuario debe controlarlo manualmente
 }
 
 // Cargar registro completo
