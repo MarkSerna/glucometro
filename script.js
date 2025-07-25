@@ -44,6 +44,7 @@ tabButtons.forEach(button => {
         // Load statistics when stats tab is clicked
         if (tabId === 'statsContent') {
             displayHistorySummary();
+            displayTrends();
         }
     });
 });
@@ -1337,6 +1338,188 @@ function initializeHistoryFilters() {
 }
 
 
+
+// Function to display trends
+function displayTrends() {
+    const history = JSON.parse(localStorage.getItem('glucometro_history') || '[]');
+    const trendsContainer = document.getElementById('trendsContainer');
+    
+    if (!trendsContainer) {
+        console.error('Trends container not found');
+        return;
+    }
+    
+    if (history.length === 0) {
+        trendsContainer.innerHTML = `
+            <p class="text-xs text-gray-600">No hay suficientes datos para mostrar tendencias</p>
+        `;
+        return;
+    }
+    
+    // Analyze trends
+    const trends = analyzeTrends(history);
+    
+    trendsContainer.innerHTML = `
+        <div class="space-y-2">
+            <div class="bg-white rounded p-2 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium text-gray-700">Tendencia General</span>
+                    <span class="text-xs ${trends.general.trend === 'up' ? 'text-red-600' : trends.general.trend === 'down' ? 'text-green-600' : 'text-gray-600'}">
+                        ${trends.general.trend === 'up' ? '📈 Subiendo' : trends.general.trend === 'down' ? '📉 Bajando' : '➡️ Estable'}
+                    </span>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">${trends.general.description}</p>
+            </div>
+            
+            <div class="bg-white rounded p-2 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium text-gray-700">Mejor Horario</span>
+                    <span class="text-xs text-blue-600">${trends.bestTime.period}</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Promedio: ${trends.bestTime.average} mg/dL</p>
+            </div>
+            
+            <div class="bg-white rounded p-2 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium text-gray-700">Últimos 7 días</span>
+                    <span class="text-xs ${trends.recent.trend === 'improving' ? 'text-green-600' : trends.recent.trend === 'worsening' ? 'text-red-600' : 'text-gray-600'}">
+                        ${trends.recent.trend === 'improving' ? '✅ Mejorando' : trends.recent.trend === 'worsening' ? '⚠️ Empeorando' : '➡️ Estable'}
+                    </span>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">${trends.recent.description}</p>
+            </div>
+        </div>
+    `;
+}
+
+// Function to analyze trends from historical data
+function analyzeTrends(history) {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    // Extract all glucose readings from history
+    const allReadings = [];
+    const readingsWithTime = [];
+    
+    history.forEach(record => {
+        const measurements = record.measurements;
+        const recordTime = new Date(record.timestamp);
+        
+        if (measurements.beforeBreakfast) {
+            allReadings.push(measurements.beforeBreakfast);
+            readingsWithTime.push({ value: measurements.beforeBreakfast, time: recordTime, hour: recordTime.getHours() });
+        }
+        if (measurements.afterBreakfast) {
+            allReadings.push(measurements.afterBreakfast);
+            readingsWithTime.push({ value: measurements.afterBreakfast, time: recordTime, hour: recordTime.getHours() });
+        }
+        if (measurements.beforeLunch) {
+            allReadings.push(measurements.beforeLunch);
+            readingsWithTime.push({ value: measurements.beforeLunch, time: recordTime, hour: recordTime.getHours() });
+        }
+        if (measurements.afterLunch) {
+            allReadings.push(measurements.afterLunch);
+            readingsWithTime.push({ value: measurements.afterLunch, time: recordTime, hour: recordTime.getHours() });
+        }
+        if (measurements.beforeDinner) {
+            allReadings.push(measurements.beforeDinner);
+            readingsWithTime.push({ value: measurements.beforeDinner, time: recordTime, hour: recordTime.getHours() });
+        }
+        if (measurements.afterDinner) {
+            allReadings.push(measurements.afterDinner);
+            readingsWithTime.push({ value: measurements.afterDinner, time: recordTime, hour: recordTime.getHours() });
+        }
+    });
+    
+    if (allReadings.length === 0) {
+        return {
+            general: { trend: 'stable', description: 'No hay datos suficientes' },
+            bestTime: { period: 'N/A', average: 0 },
+            recent: { trend: 'stable', description: 'No hay datos suficientes' }
+        };
+    }
+    
+    // General trend analysis
+    const sortedReadings = readingsWithTime.sort((a, b) => a.time - b.time);
+    const firstHalf = sortedReadings.slice(0, Math.floor(sortedReadings.length / 2));
+    const secondHalf = sortedReadings.slice(Math.floor(sortedReadings.length / 2));
+    
+    const firstAvg = firstHalf.reduce((sum, reading) => sum + reading.value, 0) / firstHalf.length;
+    const secondAvg = secondHalf.reduce((sum, reading) => sum + reading.value, 0) / secondHalf.length;
+    
+    let generalTrend = 'stable';
+    let generalDescription = 'Tus niveles se mantienen estables';
+    
+    if (secondAvg > firstAvg + 10) {
+        generalTrend = 'up';
+        generalDescription = 'Tus niveles han aumentado recientemente';
+    } else if (secondAvg < firstAvg - 10) {
+        generalTrend = 'down';
+        generalDescription = 'Tus niveles han mejorado recientemente';
+    }
+    
+    // Best time analysis
+    const timeGroups = {
+        'Mañana (6-12h)': [],
+        'Tarde (12-18h)': [],
+        'Noche (18-24h)': [],
+        'Madrugada (0-6h)': []
+    };
+    
+    readingsWithTime.forEach(reading => {
+        const hour = reading.hour;
+        if (hour >= 6 && hour < 12) {
+            timeGroups['Mañana (6-12h)'].push(reading.value);
+        } else if (hour >= 12 && hour < 18) {
+            timeGroups['Tarde (12-18h)'].push(reading.value);
+        } else if (hour >= 18 && hour < 24) {
+            timeGroups['Noche (18-24h)'].push(reading.value);
+        } else {
+            timeGroups['Madrugada (0-6h)'].push(reading.value);
+        }
+    });
+    
+    let bestTime = { period: 'N/A', average: 0 };
+    let bestAverage = Infinity;
+    
+    Object.entries(timeGroups).forEach(([period, values]) => {
+        if (values.length > 0) {
+            const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+            if (avg < bestAverage && avg >= 70 && avg <= 140) {
+                bestAverage = avg;
+                bestTime = { period, average: Math.round(avg) };
+            }
+        }
+    });
+    
+    // Recent trend (last 7 days)
+    const recentReadings = readingsWithTime.filter(reading => reading.time >= sevenDaysAgo);
+    let recentTrend = 'stable';
+    let recentDescription = 'Sin cambios significativos';
+    
+    if (recentReadings.length >= 3) {
+        const recentAvg = recentReadings.reduce((sum, reading) => sum + reading.value, 0) / recentReadings.length;
+        const olderReadings = readingsWithTime.filter(reading => reading.time < sevenDaysAgo);
+        
+        if (olderReadings.length > 0) {
+            const olderAvg = olderReadings.reduce((sum, reading) => sum + reading.value, 0) / olderReadings.length;
+            
+            if (recentAvg < olderAvg - 15) {
+                recentTrend = 'improving';
+                recentDescription = 'Mejores niveles esta semana';
+            } else if (recentAvg > olderAvg + 15) {
+                recentTrend = 'worsening';
+                recentDescription = 'Niveles más altos esta semana';
+            }
+        }
+    }
+    
+    return {
+        general: { trend: generalTrend, description: generalDescription },
+        bestTime: bestTime,
+        recent: { trend: recentTrend, description: recentDescription }
+    };
+}
 
 // Mostrar resumen del historial
 function displayHistorySummary(history) {
