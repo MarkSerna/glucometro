@@ -70,6 +70,53 @@
             display: block;
         }
         
+        /* Animaciones */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        /* Alertas optimizadas para móvil */
+        .mobile-alert {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            z-index: 9999;
+            max-width: calc(100vw - 20px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Para pantallas más grandes */
+        @media (min-width: 640px) {
+            .mobile-alert {
+                top: 20px;
+                right: 20px;
+                left: auto;
+                max-width: 400px;
+            }
+        }
+        
+        /* Asegurar que las alertas sean visibles sobre todo */
+        .alert-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 9998;
+        }
 
     </style>
 </head>
@@ -381,8 +428,11 @@
                                     </button>
                                 </div>
                             </div>
-                            <button onclick="testNotification()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-3 rounded-lg text-xs transition-all duration-200 mb-3">
+                            <button onclick="testNotification()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-3 rounded-lg text-xs transition-all duration-200 mb-2">
                                 🧪 Probar Notificación
+                            </button>
+                            <button onclick="testMobileAlert()" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-3 rounded-lg text-xs transition-all duration-200 mb-3">
+                                📱 Probar Alertas Móvil
                             </button>
                             <div class="text-xs text-gray-600">
                                 <p class="font-medium mb-1">Horarios programados:</p>
@@ -401,6 +451,6 @@
             </div>
         </div>
 
-    <script src="script.js?v=1.1"></script>
+    <script src="script.js?v=1.2"></script>
 </body>
 </html>

@@ -430,11 +430,21 @@ function showAlert(message, type = 'warning') {
             icon = '⚠️';
     }
     
-    alertDiv.className = `${alertClass} p-4 rounded-xl mb-4 border-2 flex items-center gap-3 animate-fade-in`;
-    alertDiv.innerHTML = `<span class="text-xl">${icon}</span> <div>${message}</div>`;
+    alertDiv.className = `mobile-alert ${alertClass} border-2 flex items-center gap-3 animate-fade-in`;
+    alertDiv.innerHTML = `
+        <div class="flex items-center justify-between w-full">
+            <div class="flex items-center gap-2">
+                <span class="text-xl">${icon}</span>
+                <div class="text-sm font-medium">${message}</div>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" class="text-current hover:opacity-70 ml-2">
+                ✕
+            </button>
+        </div>
+    `;
     
-    // Insertar al inicio del contenedor de alertas
-    alertsContainer.insertBefore(alertDiv, alertsContainer.firstChild);
+    // Agregar al body para que aparezca como overlay
+    document.body.appendChild(alertDiv);
     
     // Remover después de 5 segundos
     setTimeout(() => {
@@ -2003,7 +2013,7 @@ class NotificationScheduler {
                 icon = '🩺';
         }
         
-        alertDiv.className = `fixed top-4 right-4 ${bgColor} ${textColor} p-4 rounded-lg shadow-lg z-50 max-w-sm animate-fade-in`;
+        alertDiv.className = `mobile-alert ${bgColor} ${textColor} p-4 rounded-lg animate-fade-in`;
         alertDiv.innerHTML = `
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
@@ -2225,6 +2235,26 @@ function disableNotifications() {
     localStorage.setItem('notificationsEnabled', 'false');
     showAlert('Notificaciones deshabilitadas.', 'success');
     updateNotificationStatus();
+}
+
+// Función para probar alertas en móvil
+function testMobileAlert() {
+    console.log('Probando alerta en móvil...');
+    
+    // Probar diferentes tipos de alertas
+    const alertTypes = [
+        { type: 'info', message: '🩺 Alerta de información - Prueba en móvil' },
+        { type: 'warning', message: '⚠️ Alerta de advertencia - Prueba en móvil' },
+        { type: 'error', message: '🚨 Alerta de error - Prueba en móvil' }
+    ];
+    
+    alertTypes.forEach((alert, index) => {
+        setTimeout(() => {
+            notificationScheduler.showInAppAlert(alert.message, alert.type);
+        }, index * 2000); // Mostrar cada 2 segundos
+    });
+    
+    showAlert('Probando alertas en móvil. Verifica que aparezcan correctamente.', 'success');
 }
 
 // Función para probar notificaciones (útil para depuración)
