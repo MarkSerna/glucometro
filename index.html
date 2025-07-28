@@ -23,102 +23,9 @@
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGRlZnM+CjxsaW5lYXJHcmFkaWVudCBpZD0iZmF2aWNvbkdyYWRpZW50IiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzNCODJGNiIvPgo8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxRDRFRDgiLz4KPC9saW5lYXJHcmFkaWVudD4KPC9kZWZzPgo8cmVjdCB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHJ4PSI0IiBmaWxsPSJ1cmwoI2Zhdmljb25HcmFkaWVudCkiLz4KPCEtLSBHbHVjw7NtZXRybyBtaW5pIC0tPgo8cmVjdCB4PSI4IiB5PSIxMCIgd2lkdGg9IjE2IiBoZWlnaHQ9IjEyIiByeD0iMiIgZmlsbD0iI0ZGRkZGRiIvPgo8IS0tIERpc3BsYXkgLS0+CjxyZWN0IHg9IjEwIiB5PSIxMiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjQiIHJ4PSIxIiBmaWxsPSIjMUYyOTM3Ii8+Cjx0ZXh0IHg9IjE2IiB5PSIxNSIgZm9udC1mYW1pbHk9Im1vbm9zcGFjZSIgZm9udC1zaXplPSIzIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzEwQjk4MSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+MTI1PC90ZXh0Pgo8IS0tIEdvdGEgZGUgc2FuZ3JlIC0tPgo8Y2lyY2xlIGN4PSIxNiIgY3k9IjI2IiByPSIyIiBmaWxsPSIjRUY0NDQ0Ii8+CjwvdGVnPgo8L3N2Zz4K">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'glucose-blue': '#3B82F6',
-                        'glucose-green': '#10B981',
-                        'glucose-red': '#EF4444',
-                        'glucose-purple': '#8B5CF6'
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        /* Estilos adicionales para apariencia móvil */
-        .mobile-input {
-            -webkit-appearance: none;
-            -moz-appearance: textfield;
-        }
-        .mobile-input::-webkit-outer-spin-button,
-        .mobile-input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        .card-shadow {
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-        .btn-mobile {
-            min-height: 48px;
-            touch-action: manipulation;
-        }
-        .tab-btn {
-            color: #6B7280;
-            background: transparent;
-        }
-        .tab-btn.active {
-            background: linear-gradient(135deg, #3B82F6, #8B5CF6);
-            color: white;
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        
-        /* Animaciones */
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .animate-fade-in {
-            animation: fadeIn 0.3s ease-out;
-        }
-        
-        /* Alertas optimizadas para móvil */
-        .mobile-alert {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            right: 10px;
-            z-index: 9999;
-            max-width: calc(100vw - 20px);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        }
-        
-        /* Para pantallas más grandes */
-        @media (min-width: 640px) {
-            .mobile-alert {
-                top: 20px;
-                right: 20px;
-                left: auto;
-                max-width: 400px;
-            }
-        }
-        
-        /* Asegurar que las alertas sean visibles sobre todo */
-        .alert-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            pointer-events: none;
-            z-index: 9998;
-        }
-
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/idb@7/build/umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body class="bg-gradient-to-br from-blue-50 via-white to-purple-50 min-h-screen">
     <div class="container mx-auto px-3 py-2 max-w-md">
@@ -185,119 +92,7 @@
             </div>
             
             <form id="glucoseForm" class="space-y-3">
-                <!-- Desayuno -->
-                <div class="bg-white rounded-xl p-3 card-shadow">
-                    <div class="flex items-center justify-between mb-2">
-                        <h2 class="text-lg font-bold text-orange-600 flex items-center gap-1">
-                            🌅 Desayuno
-                        </h2>
-                        <button type="button" id="saveBreakfastBtn" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-3 py-1 rounded-lg text-xs transition-all duration-200">
-                            Guardar
-                        </button>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div>
-                            <label for="beforeBreakfast" class="block text-xs font-medium text-gray-600 mb-1">
-                                Antes
-                            </label>
-                            <input type="number" id="beforeBreakfast" name="beforeBreakfast" 
-                                   class="mobile-input w-full px-2 py-2 border border-gray-200 rounded-lg focus:border-orange-400 text-sm text-center" 
-                                   placeholder="85" min="50" max="500">
-                        </div>
-                        <div>
-                            <label for="afterBreakfast" class="block text-xs font-medium text-gray-600 mb-1">
-                                Después
-                            </label>
-                            <input type="number" id="afterBreakfast" name="afterBreakfast" 
-                                   class="mobile-input w-full px-2 py-2 border border-gray-200 rounded-lg focus:border-orange-400 text-sm text-center" 
-                                   placeholder="120" min="50" max="500">
-                        </div>
-                        <div>
-                            <label for="insulinBreakfast" class="block text-xs font-medium text-gray-600 mb-1">
-                                Insulina
-                            </label>
-                            <input type="number" id="insulinBreakfast" name="insulinBreakfast" 
-                                   class="mobile-input w-full px-2 py-2 border border-gray-200 rounded-lg focus:border-orange-400 text-sm text-center" 
-                                   placeholder="4" min="0" max="100" step="0.5">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Almuerzo -->
-                <div class="bg-white rounded-xl p-3 card-shadow">
-                    <div class="flex items-center justify-between mb-2">
-                        <h2 class="text-lg font-bold text-yellow-600 flex items-center gap-1">
-                            ☀️ Almuerzo
-                        </h2>
-                        <button type="button" id="saveLunchBtn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-3 py-1 rounded-lg text-xs transition-all duration-200">
-                            Guardar
-                        </button>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div>
-                            <label for="beforeLunch" class="block text-xs font-medium text-gray-600 mb-1">
-                                Antes
-                            </label>
-                            <input type="number" id="beforeLunch" name="beforeLunch" 
-                                   class="mobile-input w-full px-2 py-2 border border-gray-200 rounded-lg focus:border-yellow-400 text-sm text-center" 
-                                   placeholder="90" min="50" max="500">
-                        </div>
-                        <div>
-                            <label for="afterLunch" class="block text-xs font-medium text-gray-600 mb-1">
-                                Después
-                            </label>
-                            <input type="number" id="afterLunch" name="afterLunch" 
-                                   class="mobile-input w-full px-2 py-2 border border-gray-200 rounded-lg focus:border-yellow-400 text-sm text-center" 
-                                   placeholder="130" min="50" max="500">
-                        </div>
-                        <div>
-                            <label for="insulinLunch" class="block text-xs font-medium text-gray-600 mb-1">
-                                Insulina
-                            </label>
-                            <input type="number" id="insulinLunch" name="insulinLunch" 
-                                   class="mobile-input w-full px-2 py-2 border border-gray-200 rounded-lg focus:border-yellow-400 text-sm text-center" 
-                                   placeholder="6" min="0" max="100" step="0.5">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Cena -->
-                <div class="bg-white rounded-xl p-3 card-shadow">
-                    <div class="flex items-center justify-between mb-2">
-                        <h2 class="text-lg font-bold text-purple-600 flex items-center gap-1">
-                            🌙 Cena
-                        </h2>
-                        <button type="button" id="saveDinnerBtn" class="bg-purple-500 hover:bg-purple-600 text-white font-semibold px-3 py-1 rounded-lg text-xs transition-all duration-200">
-                            Guardar
-                        </button>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div>
-                            <label for="beforeDinner" class="block text-xs font-medium text-gray-600 mb-1">
-                                Antes
-                            </label>
-                            <input type="number" id="beforeDinner" name="beforeDinner" 
-                                   class="mobile-input w-full px-2 py-2 border border-gray-200 rounded-lg focus:border-purple-400 text-sm text-center" 
-                                   placeholder="88" min="50" max="500">
-                        </div>
-                        <div>
-                            <label for="afterDinner" class="block text-xs font-medium text-gray-600 mb-1">
-                                Después
-                            </label>
-                            <input type="number" id="afterDinner" name="afterDinner" 
-                                   class="mobile-input w-full px-2 py-2 border border-gray-200 rounded-lg focus:border-purple-400 text-sm text-center" 
-                                   placeholder="125" min="50" max="500">
-                        </div>
-                        <div>
-                            <label for="insulinDinner" class="block text-xs font-medium text-gray-600 mb-1">
-                                Insulina
-                            </label>
-                            <input type="number" id="insulinDinner" name="insulinDinner" 
-                                   class="mobile-input w-full px-2 py-2 border border-gray-200 rounded-lg focus:border-purple-400 text-sm text-center" 
-                                   placeholder="5" min="0" max="100" step="0.5">
-                        </div>
-                    </div>
-                </div>
+                <div id="mealSections" class="space-y-3"></div>
 
                 <!-- Botones de Acción -->
                 <div class="grid grid-cols-2 gap-2 pt-2">
@@ -381,10 +176,16 @@
                 
                 <div class="space-y-3">
                     <div class="bg-gray-50 rounded-lg p-3">
-                        <h3 class="text-sm font-semibold text-gray-700 mb-2">📈 Tendencias</h3>
-                        <div id="trendsContainer" class="space-y-3">
-                            <p class="text-xs text-gray-600">Cargando tendencias...</p>
-                        </div>
+                        <h3 class="text-sm font-semibold text-gray-700 mb-2">📈 Gráfico de Tendencias</h3>
+                        <canvas id="trendsChart"></canvas>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-3">
+                        <h3 class="text-sm font-semibold text-gray-700 mb-2">📊 Distribución de Lecturas</h3>
+                        <canvas id="distributionChart"></canvas>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-3">
+                        <h3 class="text-sm font-semibold text-gray-700 mb-2">🍔 Promedio por Comida</h3>
+                        <canvas id="mealAverageChart"></canvas>
                     </div>
                     <div class="bg-gray-50 rounded-lg p-3">
                         <h3 class="text-sm font-semibold text-gray-700 mb-2">🎯 Objetivos</h3>
@@ -451,6 +252,6 @@
             </div>
         </div>
 
-    <script src="script.js?v=1.4"></script>
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>

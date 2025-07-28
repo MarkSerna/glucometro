@@ -1,0 +1,79 @@
+/* Estilos adicionales para apariencia móvil */
+.mobile-input {
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+}
+.mobile-input::-webkit-outer-spin-button,
+.mobile-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.card-shadow {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+.btn-mobile {
+    min-height: 48px;
+    touch-action: manipulation;
+}
+.tab-btn {
+    color: #6B7280;
+    background: transparent;
+}
+.tab-btn.active {
+    background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+    color: white;
+}
+.tab-content {
+    display: none;
+}
+.tab-content.active {
+    display: block;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Alertas optimizadas para móvil */
+.mobile-alert {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    z-index: 9999;
+    max-width: calc(100vw - 20px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Para pantallas más grandes */
+@media (min-width: 640px) {
+    .mobile-alert {
+        top: 20px;
+        right: 20px;
+        left: auto;
+        max-width: 400px;
+    }
+}
+
+/* Asegurar que las alertas sean visibles sobre todo */
+.alert-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 9998;
+}
